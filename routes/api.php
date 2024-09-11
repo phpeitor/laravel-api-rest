@@ -15,4 +15,4 @@ Route::put('/clientes/{id}', [ClienteController::class, 'update']);
 
 Route::patch('/clientes', [ClienteController::class, 'updatePartial']);
 
-Route::delete('/clientes/{id}', [ClienteController::class, 'destroy']);
+Route::delete('/clientes/{id}', [ClienteController::class, 'destroy']); 

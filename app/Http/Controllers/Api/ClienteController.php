@@ -91,7 +91,7 @@ class ClienteController extends Controller
         }
 
         $data = [
-            'Id' => $cliente->Id,
+            'Id' => $cliente->id,
             'Paciente' => $cliente->nombre,
             'Medico' => $cliente->nombre_medico,
             'FechaCita' => $cliente->fecha_cita,
