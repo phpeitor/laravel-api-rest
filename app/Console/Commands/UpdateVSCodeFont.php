@@ -28,9 +28,15 @@ class UpdateVSCodeFont extends Command
             $this->error("Salida del comando: " . implode("\n", $output));
             return;
         }
-    
-        $this->info("Por favor, darle click en instalar la fuente");    
+        
+        $windowsFontsPath = getenv('WINDIR') . '\\Fonts\\';
+        $fontPath = $windowsFontsPath . '/Dank Mono Cursiva';
 
+        if (!File::exists($fontPath)) {
+            $this->info("Por favor, darle click en instalar la fuente"); 
+            return;
+        }
+       
         $userHome = getenv('HOMEDRIVE') . getenv('HOMEPATH');
         $settingsPath = $userHome . '\\AppData\\Roaming\\Code\\User\\settings.json';
 
