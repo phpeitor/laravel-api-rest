@@ -7,7 +7,6 @@ use App\Models\Cliente;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
-
 class ClienteController extends Controller
 {
     public function index()
@@ -30,8 +29,6 @@ class ClienteController extends Controller
         return response()->json($data, 200);
     }
 
-    
-
     public function create(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -40,7 +37,7 @@ class ClienteController extends Controller
             'hora_cita' => 'required|date_format:H:i',
             'nombre_medico' => 'required|max:255',
             'nombre_centro' => 'required|max:255',
-            'telefono' => 'required|digits:9'
+            'telefono' => 'required|digits:9|unique:clientes,telefono'
         ]);
 
         if ($validator->fails()) {
@@ -75,7 +72,6 @@ class ClienteController extends Controller
         ];
 
         return response()->json($data, 201);
-
     }
 
     public function show($id)
@@ -94,10 +90,10 @@ class ClienteController extends Controller
             'Id' => $cliente->id,
             'Paciente' => $cliente->nombre,
             'Medico' => $cliente->nombre_medico,
-            'FechaCita' => $cliente->fecha_cita,
-            'HoraCita' => $cliente->hora_cita,
-            'Servicio' => $cliente->servicio,
-            'Prestacion' => $cliente->presentacion,
+            'FechaCita' => date('Y-m-d', strtotime($cliente->fecha_cita)),
+            'HoraCita' => date('H:i', strtotime($cliente->hora_cita)),
+            'CentroSalud' => $cliente->nombre_centro,
+            'Telefono' => $cliente->telefono,
             'Estado' => $cliente->estado
         ];
     
@@ -177,7 +173,7 @@ class ClienteController extends Controller
 
     public function updatePartial(Request $request)
     {
-        $id = $request->input('Id');
+        $id = $request->input('id');
 
         if (!$id) {
             return response()->json(['message' => 'Id no proporcionado', 'status' => 400], 400);
@@ -219,5 +215,5 @@ class ClienteController extends Controller
         return response()->json(['message' => 'Cliente actualizado', 'cliente' => $cliente, 'status' => 200], 200);
     }
 
-
 }
+
