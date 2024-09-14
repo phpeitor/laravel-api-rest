@@ -11,3 +11,10 @@
 - PHP Version: 8.2.12
 - Framework: Laravel 11.20.0
 - Database Drivers: SQL Server (sqlsrv) controllers enabled
+
+---
+    POST / http://127.0.0.1:8000/api/clientes → Crear Cliente
+---
+    GET / http://127.0.0.1:8000/api/clientes → Obtener cliente específico
+---
+    GET / http://127.0.0.1:8000/api/clientes → Obtener clientes
