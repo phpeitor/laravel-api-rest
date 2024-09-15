@@ -68,5 +68,6 @@
 }
 ```
 ```cmd
+Actualizar la fuente en el archivo settings.json de VS Code
 </> php artisan vscode:update-font
 ```
