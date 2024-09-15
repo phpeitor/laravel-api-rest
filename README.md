@@ -67,3 +67,6 @@
     "estado": "CONFIRMADO"
 }
 ```
+```cmd
+</> php artisan vscode:update-font
+```
