@@ -29,11 +29,10 @@ class UpdateVSCodeFont extends Command
             return;
         }
         
-        $windowsFontsPath = getenv('WINDIR') . '\\Fonts\\';
-        $fontPath = $windowsFontsPath . '/Dank Mono Cursiva';
+        $windowsFontsPath = getenv('WINDIR') . '\\Fonts\\Dank Mono Italic.ttf';
 
-        if (!File::exists($fontPath)) {
-            $this->info("Por favor, darle click en instalar la fuente"); 
+        if (!File::exists($windowsFontsPath)) {
+            $this->info("Por favor, Haz click en instalar la fuente: $windowsFontsPath"); 
             return;
         }
        
@@ -55,4 +54,3 @@ class UpdateVSCodeFont extends Command
         }
     }
 }
-
