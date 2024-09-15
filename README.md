@@ -13,7 +13,7 @@
 - Database Drivers: SQL Server (sqlsrv) controllers enabled
 
 ---
-    POST: Crear nuevo cliente
+    POST → Crear nuevo cliente
     http://127.0.0.1:8000/api/clientes
 ```json
 {
@@ -26,17 +26,17 @@
 }
 ```
 ---
-    GET 
-    http://127.0.0.1:8000/api/clientes/{id} → Obtener cliente específico
+    GET → Obtener cliente específico
+    http://127.0.0.1:8000/api/clientes/{id}
 ---
-    GET
-    http://127.0.0.1:8000/api/clientes → Obtener todos los clientes
+    GET → Obtener todos los clientes
+    http://127.0.0.1:8000/api/clientes
 ---
-    DELETE
-    http://127.0.0.1:8000/api/clientes/{id} → Eliminar cliente
+    DELETE → Eliminar cliente
+    http://127.0.0.1:8000/api/clientes/{id}
 ---
-    PUT
-    http://127.0.0.1:8000/api/clientes/{id} → Actualizar cliente
+    PUT → Actualizar cliente
+    http://127.0.0.1:8000/api/clientes/{id}
 ```json
 {
     "nombre": "phpeitor update",
@@ -48,8 +48,8 @@
 }
 ```
 ---
-    PATCH
-    http://127.0.0.1:8000/api/clientes → Actualizar parcialmente cliente
+    PATCH → Actualizar parcialmente cliente
+    http://127.0.0.1:8000/api/clientes
 ```json
 {
     "id": "1",
