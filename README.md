@@ -13,8 +13,46 @@
 - Database Drivers: SQL Server (sqlsrv) controllers enabled
 
 ---
-    POST / http://127.0.0.1:8000/api/clientes → Crear Cliente
+    POST: Crear nuevo cliente
+    http://127.0.0.1:8000/api/clientes
+```json
+{
+    "nombre": "phpeitor",
+    "fecha_cita": "20224-09-14",
+    "hora_cita": "09:00",
+    "nombre_medico": "Dr. AMV",
+    "nombre_centro": "ESSALUD CIX",
+    "telefono": "942890820"
+}
+```
 ---
-    GET / http://127.0.0.1:8000/api/clientes → Obtener cliente específico
+    GET 
+    http://127.0.0.1:8000/api/clientes/{id} → Obtener cliente específico
 ---
-    GET / http://127.0.0.1:8000/api/clientes → Obtener clientes
+    GET
+    http://127.0.0.1:8000/api/clientes → Obtener todos los clientes
+---
+    DELETE
+    http://127.0.0.1:8000/api/clientes/{id} → Eliminar cliente
+---
+    PUT
+    http://127.0.0.1:8000/api/clientes/{id} → Actualizar cliente
+```json
+{
+    "nombre": "phpeitor update",
+    "fecha_cita": "20224-09-15",
+    "hora_cita": "10:00",
+    "nombre_medico": "Dr. TRUX",
+    "nombre_centro": "ESSALUD TRUX",
+    "telefono": "942890820"
+}
+```
+---
+    PATCH
+    http://127.0.0.1:8000/api/clientes → Actualizar parcialmente cliente
+```json
+{
+    "id": "1",
+    "estado": "CONFIRMADO"
+}
+```
