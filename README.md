@@ -11,7 +11,18 @@
 - PHP Version: 8.2.12
 - Framework: Laravel 11.20.0
 - Database Drivers: SQL Server (sqlsrv) controllers enabled
-
+```cmd
+</> php artisan make:migration create_clientes_table
+```
+```cmd
+</> php artisan session:table
+```
+```cmd
+</> php artisan migrate
+```
+```cmd
+</> php artisan serve  
+```
 ---
     POST → Crear nuevo cliente
     http://127.0.0.1:8000/api/clientes
