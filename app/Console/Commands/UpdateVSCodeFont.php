@@ -46,9 +46,10 @@ class UpdateVSCodeFont extends Command
 
         $settings = json_decode(File::get($settingsPath), true);
         $settings['editor.fontFamily'] = 'Dank Mono';
+        $settings['editor.fontLigatures'] = true;
 
         if (File::put($settingsPath, json_encode($settings, JSON_PRETTY_PRINT))) {
-            $this->info("La fuente se actualizó correctamente en: $settingsPath");
+            $this->info("La fuente & ligaduras se actualizó correctamente en: $settingsPath");
         } else {
             $this->error("Hubo un problema al escribir en settings.json");
         }
