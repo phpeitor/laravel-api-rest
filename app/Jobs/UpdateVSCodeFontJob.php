@@ -7,6 +7,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class UpdateVSCodeFontJob implements ShouldQueue
 {
@@ -14,6 +15,7 @@ class UpdateVSCodeFontJob implements ShouldQueue
 
     public function handle()
     {
+        Log::info('El Job UpdateVSCodeFontJob se está ejecutando.');
         Artisan::call('vscode:update-font');
     }
 }
