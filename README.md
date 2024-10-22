@@ -68,7 +68,7 @@
 }
 ```
 ```cmd
-Actualizar la fuente en el archivo settings.json de VS Code
+Actualizar la fuente en el archivo settings.json VS Code
 </> php artisan vscode:update-font
 ```
 [![Video](https://img.youtube.com/vi/qgyMLh8dh5g/0.jpg)](https://www.youtube.com/watch?v=qgyMLh8dh5g)  
