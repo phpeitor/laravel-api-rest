@@ -1,73 +1,53 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Laravel API REST
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Proyecto Laravel 11 para gestionar clientes y probar una API REST desde una interfaz web propia.
 
-# Project Requirements
-- PHP Version: 8.2.12
-- Framework: Laravel 11.20.0
-- Database Drivers: SQL Server (sqlsrv) controllers enabled
+## Resumen
+
+- Backend: Laravel 11
+- PHP: 8.2 o superior
+- Base de datos: SQL Server (`sqlsrv`)
+- Interfaz principal: panel web en `/`
+- API principal: `/api/clientes`
+
+## Qué incluye
+
+- CRUD de clientes
+- Validaciones de fecha, hora y teléfono
+- Paginación del listado
+- Notificaciones visuales de error y éxito
+- Panel web para probar endpoints sin salir del navegador
+
+## Endpoints
+
+- `GET /api/clientes` Lista clientes paginados
+- `GET /api/clientes/{id}` Consulta un cliente
+- `POST /api/clientes` Crea un cliente
+- `PUT /api/clientes/{id}` Actualiza un cliente
+- `PATCH /api/clientes` Actualiza el estado de un cliente
+- `DELETE /api/clientes/{id}` Elimina un cliente
+
+## Ejecución local
+
 ```cmd
-</> php artisan make:migration create_clientes_table
+php artisan optimize:clear
+php artisan migrate
+php artisan serve
 ```
+
+## Frontend
+
 ```cmd
-</> php artisan session:table
+npm install
+npm run build
 ```
-```cmd
-</> php artisan migrate
-```
-```cmd
-</> php artisan serve  
-```
----
-    POST → Crear nuevo cliente
-    http://127.0.0.1:8000/api/clientes
-```json
-{
-    "nombre": "phpeitor",
-    "fecha_cita": "20224-09-14",
-    "hora_cita": "09:00",
-    "nombre_medico": "Dr. AMV",
-    "nombre_centro": "ESSALUD CIX",
-    "telefono": "942890820"
-}
-```
----
-    GET → Obtener cliente específico
-    http://127.0.0.1:8000/api/clientes/{id}
----
-    GET → Obtener todos los clientes
-    http://127.0.0.1:8000/api/clientes
----
-    DELETE → Eliminar cliente
-    http://127.0.0.1:8000/api/clientes/{id}
----
-    PUT → Actualizar cliente
-    http://127.0.0.1:8000/api/clientes/{id}
-```json
-{
-    "nombre": "phpeitor update",
-    "fecha_cita": "20224-09-15",
-    "hora_cita": "10:00",
-    "nombre_medico": "Dr. TRUX",
-    "nombre_centro": "ESSALUD TRUX",
-    "telefono": "942890820"
-}
-```
----
-    PATCH → Actualizar parcialmente cliente
-    http://127.0.0.1:8000/api/clientes
-```json
-{
-    "id": "1",
-    "estado": "CONFIRMADO"
-}
-```
-```cmd
-Actualizar la fuente en el archivo settings.json de VS Code
-</> php artisan vscode:update-font
-```
+
+## Notas importantes
+
+- El proyecto usa SQL Server por defecto en `.env`.
+- El panel web se apoya en archivos dedicados en `resources/css/` y `resources/js/`.
+- El listado está paginado desde el backend para evitar cargar todo de golpe.
+
+## Documentación de desarrollo
+
+Revisa el archivo [`DEVELOPMENT_RULES.md`](DEVELOPMENT_RULES.md) antes de hacer cambios grandes.
