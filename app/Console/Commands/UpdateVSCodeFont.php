@@ -80,14 +80,27 @@ class UpdateVSCodeFont extends Command
                 return 0;
             }
 
-            // Ejecutar el .bat con Process y capturar salida
+            // Ejecutar el .bat con Process y pasar el nombre de la fuente como argumento
             $this->info('Ejecutando instalador de fuente...');
-            $process = Process::fromShellCommandline('cmd /c "' . $batFile . '"');
-            $process->setTimeout(300);
             try {
+                // Construir comando correctamente con comillas para manejar espacios
+                $cmd = 'cmd /c ""' . $batFile . '" "' . $fontFile . '""';
+                $process = Process::fromShellCommandline($cmd);
+                $process->setTimeout(300);
                 $process->run();
+
+                // Guardar salida para diagnóstico
+                $out = $process->getOutput();
+                $err = $process->getErrorOutput();
+                if ($out) {
+                    \Log::info('vscode:update-font installer output: ' . $out);
+                }
+                if ($err) {
+                    \Log::warning('vscode:update-font installer error output: ' . $err);
+                }
             } catch (\Throwable $e) {
                 $this->error('Error al ejecutar el instalador: ' . $e->getMessage());
+                \Log::error('vscode:update-font exception: ' . $e->getMessage());
                 return 3;
             }
 
@@ -124,9 +137,30 @@ class UpdateVSCodeFont extends Command
         $this->info("Se creó un respaldo en: $backupPath");
 
         // Fusionar y escribir de forma atómica
-        // Derivar un nombre de familia de la fuente a partir del nombre de archivo si no se proporcionó otra cosa
-        $family = pathinfo($fontFile, PATHINFO_FILENAME);
-        $family = str_replace(['-','_'], ' ', $family);
+        // Mapear nombres comunes a la familia real de la fuente para evitar nombres incorrectos
+        $lower = strtolower($fontFile);
+        $family = null;
+        $mappings = [
+            'firacode' => 'Fira Code',
+            'fira-code' => 'Fira Code',
+            'dank mono' => 'Dank Mono',
+            'dank-mono' => 'Dank Mono',
+            'dejavu' => 'DejaVu Sans'
+        ];
+
+        foreach ($mappings as $key => $val) {
+            if (strpos($lower, $key) !== false) {
+                $family = $val;
+                break;
+            }
+        }
+
+        if ($family === null) {
+            // Derivar nombre si no hay mapeo conocido
+            $family = pathinfo($fontFile, PATHINFO_FILENAME);
+            $family = str_replace(['-','_'], ' ', $family);
+        }
+
         $settings['editor.fontFamily'] = $family;
         $settings['editor.fontLigatures'] = true;
 
