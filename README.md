@@ -11,7 +11,7 @@ API REST para gestión de clientes con panel web de pruebas, validaciones de neg
 | Framework | Laravel 11 |
 | PHP | 8.2 o superior |
 | Base de datos | SQL Server (`sqlsrv`) |
-| Panel web | `/` |
+| Panel web | `http://127.0.0.1:8000` |
 | API principal | `/api/clientes` |
 
 ## Qué incluye
