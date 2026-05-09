@@ -172,6 +172,49 @@ curl -X DELETE "http://127.0.0.1:8000/api/clientes/1" ^
 
 Revisa [`DEVELOPMENT_RULES.md`](DEVELOPMENT_RULES.md) antes de hacer cambios grandes.
 
+## Actualizar VS Code (Windows)
+
+El proyecto incluye un comando Artisan y un Job para facilitar la instalación/activación de la fuente `Dank Mono` en entornos Windows.
+
+- Comando Artisan: `vscode:update-font`
+  - Detecta si el sistema es Windows.
+  - Si la fuente no está instalada, ofrece lanzar `resources/fonts/font.bat` con la opción `--install`.
+  - Si la fuente existe, realiza un respaldo de `settings.json` y actualiza `editor.fontFamily` y `editor.fontLigatures`.
+
+Ejemplos:
+
+```bash
+# Solo actualizar settings.json (requiere que la fuente ya esté instalada)
+php artisan vscode:update-font
+
+# Intentar ejecutar el instalador .bat (resources/fonts/font.bat) si la fuente falta
+php artisan vscode:update-font --install
+```
+
+- Job: `App\Jobs\UpdateVSCodeFontJob`
+  - El job ejecuta el comando `vscode:update-font` y está pensado para ser despachado desde la aplicación o scheduler.
+
+Ejemplos para despachar/ejecutar el job:
+
+```bash
+# Despachar al queue (requiere que el sistema de colas esté configurado)
+php artisan tinker --execute="\App\Jobs\UpdateVSCodeFontJob::dispatch();"
+
+# Ejecutar el job directamente (síncrono) desde tinker — útil para pruebas locales
+php artisan tinker --execute="(new \App\Jobs\UpdateVSCodeFontJob())->handle();"
+
+# Levantar un worker para procesar jobs en cola (ejecutará el job despachado arriba)
+php artisan queue:work --once
+```
+
+Notas de seguridad y operativa:
+
+- El comando está pensado para Windows; no debe ejecutarse en Linux/macOS.
+- Antes de escribir en `settings.json` el comando crea un respaldo `settings.json.bak-YYYYMMDDHHIISS`.
+- Si el `.bat` requiere interacción gráfica, ejecutar con `--install` debe hacerse desde una sesión de usuario con GUI.
+- Los logs del Job registran la ejecución y errores en `storage/logs/laravel.log`.
+
+
 ## Comandos útiles
 
 ```cmd
