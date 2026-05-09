@@ -2,6 +2,8 @@
 
 Proyecto Laravel 11 para gestionar clientes y probar una API REST desde una interfaz web propia.
 
+> Panel web y API REST para administración de clientes con validaciones, paginación y pruebas visuales.
+
 ## Resumen
 
 - Backend: Laravel 11
@@ -20,114 +22,53 @@ Proyecto Laravel 11 para gestionar clientes y probar una API REST desde una inte
 
 ## Endpoints
 
-### 1) Listar clientes
+| Method | Endpoint | Description | Body / Example |
+| --- | --- | --- | --- |
+| `GET` | `/api/clientes?page=1&per_page=5` | Lista clientes paginados | `curl -X GET "http://127.0.0.1:8000/api/clientes?page=1&per_page=5" -H "Accept: application/json"` |
+| `GET` | `/api/clientes/{id}` | Consulta un cliente por ID | `curl -X GET "http://127.0.0.1:8000/api/clientes/1" -H "Accept: application/json"` |
+| `POST` | `/api/clientes` | Crea un cliente nuevo | ```json
+{
+  "nombre": "Alejandro",
+  "fecha_cita": "2026-05-10",
+  "hora_cita": "09:30",
+  "nombre_medico": "Dr. Perez",
+  "nombre_centro": "Clinica Central",
+  "telefono": "987654321"
+}
+``` |
+| `PUT` | `/api/clientes/{id}` | Actualiza un cliente completo | ```json
+{
+  "nombre": "Alejandro Actualizado",
+  "fecha_cita": "2026-05-11",
+  "hora_cita": "10:15",
+  "nombre_medico": "Dr. Trux",
+  "nombre_centro": "Clinica Norte",
+  "telefono": "912345678"
+}
+``` |
+| `PATCH` | `/api/clientes` | Actualiza el estado de un cliente | ```json
+{
+  "id": 1,
+  "estado": "CONFIRMADO"
+}
+``` |
+| `DELETE` | `/api/clientes/{id}` | Elimina un cliente | `curl -X DELETE "http://127.0.0.1:8000/api/clientes/1" -H "Accept: application/json"` |
 
-```http
-GET http://127.0.0.1:8000/api/clientes?page=1&per_page=5
-```
-
-Copiar y pegar en `curl`:
-
-```cmd
-curl -X GET "http://127.0.0.1:8000/api/clientes?page=1&per_page=5" \
-	-H "Accept: application/json"
-```
-
-### 2) Consultar un cliente por ID
-
-```http
-GET http://127.0.0.1:8000/api/clientes/1
-```
-
-```cmd
-curl -X GET "http://127.0.0.1:8000/api/clientes/1" ^
-	-H "Accept: application/json"
-```
-
-### 3) Crear un cliente
+### Ejemplo rápido para Postman
 
 ```http
 POST http://127.0.0.1:8000/api/clientes
 Content-Type: application/json
 Accept: application/json
-```
 
-```json
 {
-	"nombre": "Alejandro",
-	"fecha_cita": "2026-05-10",
-	"hora_cita": "09:30",
-	"nombre_medico": "Dr. Perez",
-	"nombre_centro": "Clinica Central",
-	"telefono": "987654321"
+  "nombre": "Alejandro",
+  "fecha_cita": "2026-05-10",
+  "hora_cita": "09:30",
+  "nombre_medico": "Dr. Perez",
+  "nombre_centro": "Clinica Central",
+  "telefono": "987654321"
 }
-```
-
-```cmd
-curl -X POST "http://127.0.0.1:8000/api/clientes" ^
-	-H "Accept: application/json" ^
-	-H "Content-Type: application/json" ^
-	-d "{\"nombre\":\"Alejandro\",\"fecha_cita\":\"2026-05-10\",\"hora_cita\":\"09:30\",\"nombre_medico\":\"Dr. Perez\",\"nombre_centro\":\"Clinica Central\",\"telefono\":\"987654321\"}"
-```
-
-### 4) Actualizar un cliente completo
-
-```http
-PUT http://127.0.0.1:8000/api/clientes/1
-Content-Type: application/json
-Accept: application/json
-```
-
-```json
-{
-	"nombre": "Alejandro Actualizado",
-	"fecha_cita": "2026-05-11",
-	"hora_cita": "10:15",
-	"nombre_medico": "Dr. Trux",
-	"nombre_centro": "Clinica Norte",
-	"telefono": "912345678"
-}
-```
-
-```cmd
-curl -X PUT "http://127.0.0.1:8000/api/clientes/1" ^
-	-H "Accept: application/json" ^
-	-H "Content-Type: application/json" ^
-	-d "{\"nombre\":\"Alejandro Actualizado\",\"fecha_cita\":\"2026-05-11\",\"hora_cita\":\"10:15\",\"nombre_medico\":\"Dr. Trux\",\"nombre_centro\":\"Clinica Norte\",\"telefono\":\"912345678\"}"
-```
-
-### 5) Actualizar el estado de un cliente
-
-```http
-PATCH http://127.0.0.1:8000/api/clientes
-Content-Type: application/json
-Accept: application/json
-```
-
-```json
-{
-	"id": 1,
-	"estado": "CONFIRMADO"
-}
-```
-
-```cmd
-curl -X PATCH "http://127.0.0.1:8000/api/clientes" ^
-	-H "Accept: application/json" ^
-	-H "Content-Type: application/json" ^
-	-d "{\"id\":1,\"estado\":\"CONFIRMADO\"}"
-```
-
-### 6) Eliminar un cliente
-
-```http
-DELETE http://127.0.0.1:8000/api/clientes/1
-Accept: application/json
-```
-
-```cmd
-curl -X DELETE "http://127.0.0.1:8000/api/clientes/1" ^
-	-H "Accept: application/json"
 ```
 
 ## Ejecución local
