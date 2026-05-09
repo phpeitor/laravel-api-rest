@@ -47,7 +47,7 @@ El proyecto usa SQL Server por defecto. Revisa estos valores en `.env`:
 
 ```dotenv
 DB_CONNECTION=sqlsrv
-DB_HOST=161.132.4.164
+DB_HOST=192.168.1.250
 DB_PORT=1433
 DB_DATABASE=BD_TEST
 DB_USERNAME=sa
