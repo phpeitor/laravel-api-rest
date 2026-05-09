@@ -11,14 +11,15 @@ class ClienteController extends Controller
 {
     public function index()
     {
-        $clientes = cliente::all();
+        $clientes = Cliente::all();
 
         if ($clientes->isEmpty()) {
              $data = [
                  'message' => 'No se encontraron clientes',
+                 'clientes' => [],
                  'status' => 200
              ];
-             return response()->json($data, 404);
+             return response()->json($data, 200);
         }
 
         $data = [
