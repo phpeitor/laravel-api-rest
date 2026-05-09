@@ -217,6 +217,11 @@
                             </tbody>
                         </table>
                     </div>
+
+                    <div class="pagination-bar">
+                        <p class="pagination-summary" data-pagination-summary>Mostrando 0 de 0 clientes</p>
+                        <div class="pagination-controls" data-pagination-controls></div>
+                    </div>
                 </section>
             </section>
         </main>

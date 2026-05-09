@@ -296,6 +296,55 @@ textarea {
 	overflow: hidden;
 }
 
+.pagination-bar {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	gap: 12px;
+	align-items: center;
+	margin-top: 16px;
+	padding-top: 16px;
+	border-top: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.pagination-summary {
+	margin: 0;
+	color: var(--muted);
+	font-size: 0.92rem;
+	font-weight: 600;
+}
+
+.pagination-controls {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	justify-content: flex-end;
+}
+
+.pagination-button {
+	border: 1px solid rgba(15, 23, 42, 0.14);
+	background: rgba(255, 255, 255, 0.92);
+	color: var(--text);
+	border-radius: 999px;
+	padding: 8px 12px;
+	font-size: 0.85rem;
+	font-weight: 800;
+	cursor: pointer;
+	transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.pagination-button:hover {
+	transform: translateY(-1px);
+	border-color: rgba(15, 118, 110, 0.4);
+	background: rgba(15, 118, 110, 0.08);
+}
+
+.pagination-button.active {
+	background: linear-gradient(135deg, var(--accent), #115e59);
+	color: white;
+	border-color: transparent;
+}
+
 .table-wrap {
 	overflow-x: auto;
 }

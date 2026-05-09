@@ -3,6 +3,8 @@ const responseStatus = document.querySelector('[data-response-status]');
 const responseTitle = document.querySelector('[data-response-title]');
 const clientsTableBody = document.querySelector('[data-clients-body]');
 const toastStack = document.querySelector('[data-toast-stack]');
+const paginationControls = document.querySelector('[data-pagination-controls]');
+const paginationSummary = document.querySelector('[data-pagination-summary]');
 
 const endpoints = {
     list: '/api/clientes',
@@ -20,6 +22,15 @@ const forms = {
     partial: document.querySelector('[data-form-partial]'),
     delete: document.querySelector('[data-form-delete]'),
     refresh: document.querySelector('[data-refresh]'),
+};
+
+const paginationState = {
+    currentPage: 1,
+    lastPage: 1,
+    perPage: 5,
+    total: 0,
+    from: 0,
+    to: 0,
 };
 
 const todayIsoDate = () => {
@@ -146,6 +157,58 @@ const renderClients = (clientes) => {
     `).join('');
 };
 
+const renderPagination = () => {
+    if (!paginationControls) {
+        return;
+    }
+
+    const { currentPage, lastPage, total, from, to } = paginationState;
+
+    if (total === 0) {
+        paginationControls.innerHTML = '';
+
+        if (paginationSummary) {
+            paginationSummary.textContent = 'No hay clientes registrados todavía.';
+        }
+
+        return;
+    }
+
+    if (paginationSummary) {
+        paginationSummary.textContent = `Mostrando ${from} a ${to} de ${total} clientes`;
+    }
+
+    const pages = [];
+    const windowSize = 5;
+    let start = Math.max(1, currentPage - 2);
+    let end = Math.min(lastPage, start + windowSize - 1);
+    start = Math.max(1, end - windowSize + 1);
+
+    if (currentPage > 1) {
+        pages.push(`<button class="pagination-button" type="button" data-page="${currentPage - 1}">Anterior</button>`);
+    }
+
+    for (let page = start; page <= end; page += 1) {
+        pages.push(`
+            <button class="pagination-button ${page === currentPage ? 'active' : ''}" type="button" data-page="${page}">
+                ${page}
+            </button>
+        `);
+    }
+
+    if (currentPage < lastPage) {
+        pages.push(`<button class="pagination-button" type="button" data-page="${currentPage + 1}">Siguiente</button>`);
+    }
+
+    paginationControls.innerHTML = pages.join('');
+
+    paginationControls.querySelectorAll('[data-page]').forEach((button) => {
+        button.addEventListener('click', () => {
+            loadClients(Number(button.dataset.page ?? 1));
+        });
+    });
+};
+
 const fetchJson = async (url, options = {}) => {
     const response = await fetch(url, {
         headers: {
@@ -167,11 +230,31 @@ const fetchJson = async (url, options = {}) => {
     return { response, payload };
 };
 
-const loadClients = async () => {
-    const { response, payload } = await fetchJson(endpoints.list, { method: 'GET' });
+const loadClients = async (page = paginationState.currentPage) => {
+    const params = new URLSearchParams({
+        page: String(page),
+        per_page: String(paginationState.perPage),
+    });
+
+    const { response, payload } = await fetchJson(`${endpoints.list}?${params.toString()}`, { method: 'GET' });
 
     if (response.ok) {
+        const pagination = payload.pagination ?? {};
+
+        paginationState.currentPage = pagination.current_page ?? page;
+        paginationState.lastPage = pagination.last_page ?? 1;
+        paginationState.perPage = pagination.per_page ?? paginationState.perPage;
+        paginationState.total = pagination.total ?? 0;
+        paginationState.from = pagination.from ?? 0;
+        paginationState.to = pagination.to ?? 0;
+
+        if (paginationState.currentPage > paginationState.lastPage && paginationState.lastPage > 0) {
+            await loadClients(paginationState.lastPage);
+            return;
+        }
+
         renderClients(payload.clientes ?? []);
+        renderPagination();
     }
 
     showResponse('Listado de clientes', response.status, payload);
@@ -252,7 +335,7 @@ bindForm(forms.delete, async (data) => {
 });
 
 if (forms.refresh) {
-    forms.refresh.addEventListener('click', loadClients);
+    forms.refresh.addEventListener('click', () => loadClients(paginationState.currentPage));
 }
 
 loadClients().catch((error) => {

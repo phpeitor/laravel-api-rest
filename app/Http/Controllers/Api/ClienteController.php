@@ -10,21 +10,38 @@ use Illuminate\Support\Facades\Validator;
 
 class ClienteController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $clientes = Cliente::all();
+        $perPage = max(1, min((int) $request->query('per_page', 5), 25));
+        $clientes = Cliente::orderByDesc('id')->paginate($perPage);
 
         if ($clientes->isEmpty()) {
              $data = [
                  'message' => 'No se encontraron clientes',
                  'clientes' => [],
+                 'pagination' => [
+                     'current_page' => $clientes->currentPage(),
+                     'last_page' => $clientes->lastPage(),
+                     'per_page' => $clientes->perPage(),
+                     'total' => $clientes->total(),
+                     'from' => $clientes->firstItem(),
+                     'to' => $clientes->lastItem(),
+                 ],
                  'status' => 200
              ];
              return response()->json($data, 200);
         }
 
         $data = [
-            'clientes' => $clientes,
+            'clientes' => $clientes->items(),
+            'pagination' => [
+                'current_page' => $clientes->currentPage(),
+                'last_page' => $clientes->lastPage(),
+                'per_page' => $clientes->perPage(),
+                'total' => $clientes->total(),
+                'from' => $clientes->firstItem(),
+                'to' => $clientes->lastItem(),
+            ],
             'status' => 200
         ];
 
