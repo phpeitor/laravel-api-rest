@@ -234,6 +234,21 @@ php artisan vscode:update-font --font="Dank Mono Italic.ttf"
 
 Si el archivo de fuente no existe en `resources/fonts`, el comando mostrará una advertencia y seguirá usando el nombre proporcionado.
 
+Selección interactiva (recomendado)
+
+ - Si no pasas `--font`, el comando ahora te pedirá que selecciones una de las fuentes encontradas en `resources/fonts` mediante un menú interactivo. Esto evita errores de tipeo y garantiza que el nombre de archivo sea exacto.
+ - Si pasas `--font`, el valor debe coincidir exactamente con un archivo dentro de `resources/fonts`; en caso contrario el comando mostrará un error y listará las opciones disponibles.
+
+Ejemplo (flujo recomendado):
+
+```bash
+# Lista rápida de fuentes
+php artisan vscode:update-font --list
+
+# Ejecuta y selecciona la fuente desde el menú interactivo
+php artisan vscode:update-font --install
+```
+
 
 ## Comandos útiles
 

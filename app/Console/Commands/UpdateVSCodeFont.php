@@ -38,11 +38,27 @@ class UpdateVSCodeFont extends Command
             return 0;
         }
 
-        // Fuente seleccionada (archivo). Por defecto se mantiene el comportamiento anterior.
-        $fontFile = $this->option('font') ?: 'Dank Mono Italic.ttf';
-        if (!in_array($fontFile, $availableFiles) && !empty($availableFiles)) {
-            // Si no está en resources/fonts, avisar pero permitir proceder (por compatibilidad)
-            $this->line("Advertencia: '$fontFile' no se encontró en resources/fonts. Se usará el nombre tal cual.");
+        // Fuente seleccionada (archivo). Si hay fuentes en resources/fonts forzamos selección interactiva
+        $optFont = $this->option('font');
+        if (!empty($availableFiles)) {
+            if ($optFont) {
+                if (!in_array($optFont, $availableFiles)) {
+                    $this->error("El archivo de fuente especificado no se encontró en resources/fonts: $optFont");
+                    $this->info('Fuentes disponibles:');
+                    foreach ($availableFiles as $f) {
+                        $this->line(' - ' . $f);
+                    }
+                    $this->line('Usa --font="Nombre Fuente.ttf" con el nombre exacto o ejecuta sin --font para seleccionar.');
+                    return 2;
+                }
+                $fontFile = $optFont;
+            } else {
+                // Selección interactiva obligatoria para evitar typos
+                $fontFile = $this->choice('Selecciona una fuente de resources/fonts', $availableFiles, 0);
+            }
+        } else {
+            // Si no hay fuentes en resources/fonts, conservar comportamiento por compatibilidad
+            $fontFile = $optFont ?: 'Dank Mono Italic.ttf';
         }
 
         $windowsFontsPath = $windir . '\\Fonts\\' . $fontFile;
