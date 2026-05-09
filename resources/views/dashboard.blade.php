@@ -29,8 +29,8 @@
                             <span>Clientes actualizados</span>
                         </div>
                         <div class="stat">
-                            <strong>1 panel dinámico</strong>
-                            <span>Tabla sincronizada con todos tus clientes.</span>
+                            <strong>{{ count($endpoints) }}</strong>
+                            <span>Endpoints disponibles en el panel.</span>
                         </div>
                     </div>
                 </article>
