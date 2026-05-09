@@ -21,16 +21,16 @@
 
                     <div class="hero-stats">
                         <div class="stat">
-                            <strong>6 endpoints</strong>
-                            <span>Documentados y listos para prueba rápida.</span>
+                            <strong>{{ $clientesRegistrados }}</strong>
+                            <span>Clientes registrados</span>
                         </div>
                         <div class="stat">
-                            <strong>1 formulario</strong>
-                            <span>Creación de cliente con respuesta en vivo.</span>
+                            <strong>{{ $clientesActualizados }}</strong>
+                            <span>Clientes actualizados</span>
                         </div>
                         <div class="stat">
-                            <strong>1 listado</strong>
-                            <span>Tabla sincronizada con la API.</span>
+                            <strong>1 panel dinámico</strong>
+                            <span>Tabla sincronizada con todos tus clientes.</span>
                         </div>
                     </div>
                 </article>

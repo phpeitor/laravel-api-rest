@@ -28,6 +28,12 @@ const todayIsoDate = () => {
     return new Date(now.getTime() - timezoneOffset).toISOString().slice(0, 10);
 };
 
+const currentIsoMinute = () => {
+    const now = new Date();
+    const timezoneOffset = now.getTimezoneOffset() * 60000;
+    return new Date(now.getTime() - timezoneOffset).toISOString().slice(0, 16);
+};
+
 const showToast = (type, message) => {
     if (!toastStack) {
         return;
@@ -76,6 +82,8 @@ const notifyResponse = (response, payload, successMessage) => {
 const validateCreateForm = (data) => {
     const errors = [];
     const today = todayIsoDate();
+    const currentMinute = currentIsoMinute();
+    const selectedDateTime = `${data.fecha_cita ?? ''}T${data.hora_cita ?? ''}`;
 
     if (!/^\d{9}$/.test(data.telefono ?? '')) {
         errors.push('El telefono debe tener exactamente 9 digitos numericos.');
@@ -83,6 +91,8 @@ const validateCreateForm = (data) => {
 
     if ((data.fecha_cita ?? '') < today) {
         errors.push('La fecha de cita no puede ser menor a la fecha actual.');
+    } else if ((data.fecha_cita ?? '') === today && selectedDateTime < currentMinute) {
+        errors.push('La hora de cita no puede ser menor a la hora actual.');
     }
 
     return errors;

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Cliente;
+use Illuminate\Support\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -41,6 +42,7 @@ class ClienteController extends Controller
             'telefono' => 'required|digits:9|unique:clientes,telefono'
         ], [
             'fecha_cita.after_or_equal' => 'La fecha de cita no puede ser menor a la fecha actual.',
+            'hora_cita.date_format' => 'La hora de cita debe tener el formato correcto.',
             'telefono.digits' => 'El teléfono debe tener exactamente 9 dígitos numéricos.',
             'telefono.unique' => 'El teléfono ya está registrado para otro cliente.',
         ]);
@@ -52,6 +54,19 @@ class ClienteController extends Controller
                 'status' => 400
             ];
             return response()->json($data, 400);
+        }
+
+        $fechaHoraCita = Carbon::createFromFormat('Y-m-d H:i', $request->fecha_cita.' '.$request->hora_cita);
+        $ahora = now()->seconds(0);
+
+        if ($request->fecha_cita === $ahora->toDateString() && $fechaHoraCita->lt($ahora)) {
+            return response()->json([
+                'message' => 'Error en la validación de los datos',
+                'errors' => [
+                    'hora_cita' => ['La hora de cita no puede ser menor a la hora actual.'],
+                ],
+                'status' => 400,
+            ], 400);
         }
 
         $cliente = Cliente::create([
