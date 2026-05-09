@@ -1,8 +1,11 @@
-# Laravel API REST
+## Laravel API Rest 🐘
+[![forthebadge](http://forthebadge.com/images/badges/for-robots.svg)](https://www.linkedin.com/in/drphp/)
+[![forthebadge](http://forthebadge.com/images/badges/built-with-love.svg)](https://www.linkedin.com/in/drphp/)
 
-API REST para gestión de clientes con panel web de pruebas, validaciones de negocio y listado paginado.
+[![Video](https://img.youtube.com/vi/qgyMLh8dh5g/0.jpg)](https://www.youtube.com/watch?v=qgyMLh8dh5g)  
 
-> Hecho con Laravel 11, SQL Server y una interfaz web dedicada para probar endpoints sin salir del navegador.
+[![Video Demo](https://img.shields.io/badge/YouTube-FF0000?style=for-the-badge&logo=youtube)](https://www.youtube.com/watch?v=qgyMLh8dh5g)
+
 
 ## Vista rápida
 
