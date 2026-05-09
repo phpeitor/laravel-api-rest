@@ -214,6 +214,26 @@ Notas de seguridad y operativa:
 - Si el `.bat` requiere interacción gráfica, ejecutar con `--install` debe hacerse desde una sesión de usuario con GUI.
 - Los logs del Job registran la ejecución y errores en `storage/logs/laravel.log`.
 
+Selección de fuentes disponibles
+
+ - Para listar las fuentes que están en `resources/fonts` usa:
+
+```bash
+php artisan vscode:update-font --list
+```
+
+ - Para seleccionar una fuente específica (archivo que exista en `resources/fonts`) al instalar/activar:
+
+```bash
+# Instalar y usar 'Dank Mono Italic.ttf' (si existe en resources/fonts)
+php artisan vscode:update-font --install --font="Dank Mono Italic.ttf"
+
+# Solo actualizar settings.json con la fuente seleccionada (sin ejecutar el instalador)
+php artisan vscode:update-font --font="Dank Mono Italic.ttf"
+```
+
+Si el archivo de fuente no existe en `resources/fonts`, el comando mostrará una advertencia y seguirá usando el nombre proporcionado.
+
 
 ## Comandos útiles
 

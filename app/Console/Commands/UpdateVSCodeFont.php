@@ -8,8 +8,8 @@ use Symfony\Component\Process\Process;
 
 class UpdateVSCodeFont extends Command
 {
-    protected $signature = 'vscode:update-font {--install : Ejecutar el .bat para intentar instalar la fuente si no está presente}';
-    protected $description = 'Actualizar la fuente en el archivo settings.json de VS Code (Windows)';
+    protected $signature = 'vscode:update-font {--install : Ejecutar el .bat para intentar instalar la fuente si no está presente} {--font= : Nombre del archivo de fuente dentro de resources/fonts (ej: "Dank Mono Italic.ttf")} {--list : Mostrar fuentes disponibles en resources/fonts}';
+    protected $description = 'Actualizar la fuente en el archivo settings.json de VS Code (Windows) — permite listar/seleccionar fuentes desde resources/fonts';
 
     public function handle()
     {
@@ -19,7 +19,33 @@ class UpdateVSCodeFont extends Command
         }
 
         $windir = getenv('WINDIR') ?: 'C:\\Windows';
-        $windowsFontsPath = $windir . '\\Fonts\\Dank Mono Italic.ttf';
+
+        // Fuentes disponibles en resources/fonts
+        $fontsDir = resource_path('fonts');
+        $available = glob($fontsDir . DIRECTORY_SEPARATOR . '*.{ttf,otf}', GLOB_BRACE) ?: [];
+        $availableFiles = array_map('basename', $available);
+
+        if ($this->option('list')) {
+            if (empty($availableFiles)) {
+                $this->info('No se encontraron archivos de fuentes en resources/fonts.');
+                return 0;
+            }
+            $this->info('Fuentes disponibles:');
+            foreach ($availableFiles as $f) {
+                $this->line(' - ' . $f);
+            }
+            $this->line('Usar --font="Nombre Fuente.ttf" para seleccionar una fuente.');
+            return 0;
+        }
+
+        // Fuente seleccionada (archivo). Por defecto se mantiene el comportamiento anterior.
+        $fontFile = $this->option('font') ?: 'Dank Mono Italic.ttf';
+        if (!in_array($fontFile, $availableFiles) && !empty($availableFiles)) {
+            // Si no está en resources/fonts, avisar pero permitir proceder (por compatibilidad)
+            $this->line("Advertencia: '$fontFile' no se encontró en resources/fonts. Se usará el nombre tal cual.");
+        }
+
+        $windowsFontsPath = $windir . '\\Fonts\\' . $fontFile;
 
         // Si la fuente no existe, intentar instalar si el flag --install está presente
         if (!File::exists($windowsFontsPath)) {
@@ -32,9 +58,9 @@ class UpdateVSCodeFont extends Command
             }
 
             if (! $this->option('install')) {
-                $this->info('La fuente Dank Mono no parece estar instalada.');
+                $this->info("La fuente $fontFile no parece estar instalada.");
                 $this->info('Ejecuta el comando con la opción --install para lanzar el instalador:');
-                $this->line('  php artisan vscode:update-font --install');
+                $this->line('  php artisan vscode:update-font --install --font="' . $fontFile . '"');
                 return 0;
             }
 
@@ -82,7 +108,10 @@ class UpdateVSCodeFont extends Command
         $this->info("Se creó un respaldo en: $backupPath");
 
         // Fusionar y escribir de forma atómica
-        $settings['editor.fontFamily'] = 'Dank Mono';
+        // Derivar un nombre de familia de la fuente a partir del nombre de archivo si no se proporcionó otra cosa
+        $family = pathinfo($fontFile, PATHINFO_FILENAME);
+        $family = str_replace(['-','_'], ' ', $family);
+        $settings['editor.fontFamily'] = $family;
         $settings['editor.fontLigatures'] = true;
 
         $tmpPath = $settingsPath . '.tmp';
