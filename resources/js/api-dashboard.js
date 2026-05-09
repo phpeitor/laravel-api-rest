@@ -2,6 +2,7 @@ const responseOutput = document.querySelector('[data-response-output]');
 const responseStatus = document.querySelector('[data-response-status]');
 const responseTitle = document.querySelector('[data-response-title]');
 const clientsTableBody = document.querySelector('[data-clients-body]');
+const toastStack = document.querySelector('[data-toast-stack]');
 
 const endpoints = {
     list: '/api/clientes',
@@ -19,6 +20,72 @@ const forms = {
     partial: document.querySelector('[data-form-partial]'),
     delete: document.querySelector('[data-form-delete]'),
     refresh: document.querySelector('[data-refresh]'),
+};
+
+const todayIsoDate = () => {
+    const now = new Date();
+    const timezoneOffset = now.getTimezoneOffset() * 60000;
+    return new Date(now.getTime() - timezoneOffset).toISOString().slice(0, 10);
+};
+
+const showToast = (type, message) => {
+    if (!toastStack) {
+        return;
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    toastStack.prepend(toast);
+
+    window.setTimeout(() => {
+        toast.remove();
+    }, 5000);
+};
+
+const normalizeErrors = (payload) => {
+    if (!payload || typeof payload !== 'object' || !payload.errors) {
+        return [];
+    }
+
+    return Object.values(payload.errors)
+        .flat()
+        .filter(Boolean)
+        .map((value) => String(value));
+};
+
+const notifyResponse = (response, payload, successMessage) => {
+    if (response.ok) {
+        if (successMessage) {
+            showToast('success', successMessage);
+        }
+        return;
+    }
+
+    const errorMessages = normalizeErrors(payload);
+
+    if (errorMessages.length > 0) {
+        errorMessages.forEach((message) => showToast('error', message));
+        return;
+    }
+
+    const fallbackMessage = payload?.message ?? 'Ocurrio un error al procesar la solicitud.';
+    showToast('error', fallbackMessage);
+};
+
+const validateCreateForm = (data) => {
+    const errors = [];
+    const today = todayIsoDate();
+
+    if (!/^\d{9}$/.test(data.telefono ?? '')) {
+        errors.push('El telefono debe tener exactamente 9 digitos numericos.');
+    }
+
+    if ((data.fecha_cita ?? '') < today) {
+        errors.push('La fecha de cita no puede ser menor a la fecha actual.');
+    }
+
+    return errors;
 };
 
 const fillStatus = (label, status) => {
@@ -117,17 +184,26 @@ const bindForm = (form, action) => {
 };
 
 bindForm(forms.create, async (data) => {
+    const localErrors = validateCreateForm(data);
+
+    if (localErrors.length > 0) {
+        localErrors.forEach((message) => showToast('error', message));
+        return { refresh: false };
+    }
+
     const { response, payload } = await fetchJson(endpoints.create, {
         method: 'POST',
         body: JSON.stringify(data),
     });
 
     showResponse('Crear cliente', response.status, payload);
+    notifyResponse(response, payload, 'Cliente creado correctamente.');
 });
 
 bindForm(forms.show, async (data) => {
     const { response, payload } = await fetchJson(endpoints.show(data.id), { method: 'GET' });
     showResponse('Consultar cliente', response.status, payload);
+    notifyResponse(response, payload, 'Consulta realizada correctamente.');
 
     return { refresh: false };
 });
@@ -143,6 +219,7 @@ bindForm(forms.update, async (data) => {
     });
 
     showResponse('Actualizar cliente', response.status, payload);
+    notifyResponse(response, payload, 'Cliente actualizado correctamente.');
 });
 
 bindForm(forms.partial, async (data) => {
@@ -152,6 +229,7 @@ bindForm(forms.partial, async (data) => {
     });
 
     showResponse('Actualizar estado', response.status, payload);
+    notifyResponse(response, payload, 'Estado actualizado correctamente.');
 });
 
 bindForm(forms.delete, async (data) => {
@@ -160,6 +238,7 @@ bindForm(forms.delete, async (data) => {
     });
 
     showResponse('Eliminar cliente', response.status, payload);
+    notifyResponse(response, payload, 'Cliente eliminado correctamente.');
 });
 
 if (forms.refresh) {
@@ -170,4 +249,5 @@ loadClients().catch((error) => {
     showResponse('Error al cargar clientes', 500, {
         message: error.message,
     });
+    showToast('error', 'No se pudo cargar el listado de clientes.');
 });

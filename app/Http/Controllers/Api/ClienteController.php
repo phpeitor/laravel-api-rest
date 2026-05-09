@@ -34,11 +34,15 @@ class ClienteController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'nombre' => 'required|max:255',
-            'fecha_cita' => 'required|date|date_format:Y-m-d',
+            'fecha_cita' => 'required|date|date_format:Y-m-d|after_or_equal:today',
             'hora_cita' => 'required|date_format:H:i',
             'nombre_medico' => 'required|max:255',
             'nombre_centro' => 'required|max:255',
             'telefono' => 'required|digits:9|unique:clientes,telefono'
+        ], [
+            'fecha_cita.after_or_equal' => 'La fecha de cita no puede ser menor a la fecha actual.',
+            'telefono.digits' => 'El teléfono debe tener exactamente 9 dígitos numéricos.',
+            'telefono.unique' => 'El teléfono ya está registrado para otro cliente.',
         ]);
 
         if ($validator->fails()) {

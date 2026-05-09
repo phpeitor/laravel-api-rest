@@ -89,7 +89,8 @@ textarea {
 
 .hero-title {
 	margin: 18px 0 14px;
-	font-size: clamp(2rem, 4vw, 4.2rem);
+	font-size: 1.55rem;
+    font-weight: 800;
 	line-height: 0.98;
 	letter-spacing: -0.05em;
 }
@@ -356,6 +357,50 @@ th {
 	margin-bottom: 14px;
 }
 
+.toast-stack {
+	position: fixed;
+	top: 14px;
+	right: 14px;
+	z-index: 9999;
+	display: grid;
+	gap: 10px;
+	max-width: min(440px, calc(100vw - 28px));
+}
+
+.toast {
+	padding: 12px 14px;
+	border-radius: 12px;
+	border: 1px solid rgba(15, 23, 42, 0.12);
+	background: #ffffff;
+	box-shadow: 0 10px 30px rgba(15, 23, 42, 0.16);
+	font-size: 0.9rem;
+	line-height: 1.45;
+	animation: toast-in 0.2s ease-out;
+}
+
+.toast.error {
+	border-color: rgba(185, 28, 28, 0.4);
+	background: #fef2f2;
+	color: #991b1b;
+}
+
+.toast.success {
+	border-color: rgba(6, 95, 70, 0.4);
+	background: #ecfdf5;
+	color: #065f46;
+}
+
+@keyframes toast-in {
+	from {
+		opacity: 0;
+		transform: translateY(-8px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
 .pill {
 	display: inline-flex;
 	align-items: center;
@@ -375,6 +420,12 @@ th {
 @media (max-width: 720px) {
 	.api-shell {
 		padding: 18px;
+	}
+
+	.toast-stack {
+		left: 10px;
+		right: 10px;
+		max-width: none;
 	}
 
 	.hero-card,

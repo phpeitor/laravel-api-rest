@@ -8,11 +8,12 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body>
+        <div class="toast-stack" data-toast-stack aria-live="polite" aria-atomic="true"></div>
         <main class="api-shell">
             <section class="api-hero">
                 <article class="hero-card">
-                    <span class="eyebrow">API REST para terceros</span>
-                    <h1 class="hero-title">Panel web para probar clientes y endpoints.</h1>
+                    <span class="eyebrow">API REST Laravel v{{ Illuminate\Foundation\Application::VERSION }}</span>
+                    <h4 class="hero-title">Panel web para probar clientes y endpoints.</h4>
                     <p class="hero-copy">
                         Esta portada sirve como base para validar por navegador la API del proyecto. Desde aquí puedes crear,
                         consultar, actualizar y eliminar clientes sin salir de la app.
@@ -79,7 +80,7 @@
                                 </div>
                                 <div class="field">
                                     <label for="fecha_cita">Fecha cita</label>
-                                    <input id="fecha_cita" name="fecha_cita" type="date" required>
+                                    <input id="fecha_cita" name="fecha_cita" type="date" min="{{ now()->toDateString() }}" required>
                                 </div>
                                 <div class="field">
                                     <label for="hora_cita">Hora cita</label>
@@ -95,7 +96,7 @@
                                 </div>
                                 <div class="field full">
                                     <label for="telefono">Teléfono</label>
-                                    <input id="telefono" name="telefono" type="text" placeholder="912345678" maxlength="9" required>
+                                    <input id="telefono" name="telefono" type="text" placeholder="912345678" maxlength="9" inputmode="numeric" pattern="[0-9]{9}" title="El teléfono debe tener exactamente 9 dígitos" required>
                                 </div>
                             </div>
 
