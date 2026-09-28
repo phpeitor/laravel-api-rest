@@ -1,5 +1,7 @@
 # Estándares de Base de Datos — API REST PHP
 
+Este documento complementa `.ia-context/DEVELOPMENT_RULES.md`. Mantener la persistencia existente del proyecto; no asumir Laravel, SQL Server ni un ORM.
+
 ## Tecnología y ubicación
 
 El proyecto utiliza PDO con MySQL/MariaDB. La configuración de conexión se obtiene de variables de entorno; las migraciones SQL viven en `database/migrations/` y el ejecutor en `database/migrate.php`. Consultar la migración, `database/migrate.php` y `src/Database/Database.class.php` antes de cambiar el esquema o la conexión.

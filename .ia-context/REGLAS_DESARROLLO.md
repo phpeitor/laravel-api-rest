@@ -1,5 +1,7 @@
 # Guía de desarrollo — API REST PHP
 
+Este documento resume las reglas generales de `.ia-context/DEVELOPMENT_RULES.md`, que es la referencia principal para el flujo de trabajo y la colaboración entre agentes de IA. Los estándares específicos de backend, frontend y base de datos complementan estas reglas.
+
 ## Propósito
 
 API REST de ejemplo para gestionar clientes/usuarios mediante PHP nativo, PDO y MySQL/MariaDB. Incluye endpoints CRUD en `api/`, clases de aplicación en `src/`, autenticación JWT, configuración por entorno y una interfaz web básica para probar solicitudes.
@@ -27,6 +29,6 @@ Cliente HTTP / interfaz de prueba
 - Actualizar `README.md` cuando cambien endpoints, configuración, instalación o migraciones.
 - Ejecutar `php -l` en los archivos PHP modificados y probar los flujos afectados.
 
-## Fuera de alcance
+## Alcance
 
-No implementar generación de Pixel Art, procesamiento de imágenes, servicios Python ni funcionalidades no relacionadas con la API CRUD salvo solicitud explícita.
+No añadir funcionalidades ajenas a la API CRUD existente salvo solicitud explícita. Antes de cambiar una ruta, campo, autenticación o formato de respuesta, confirmar el contrato implementado y documentado.

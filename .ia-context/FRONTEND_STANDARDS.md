@@ -1,5 +1,7 @@
 # Estándares Frontend — Interfaz de prueba de la API
 
+Estos estándares cubren únicamente la interfaz web de prueba del proyecto PHP nativo y complementan `.ia-context/DEVELOPMENT_RULES.md`.
+
 ## Alcance
 
 La interfaz existente (`index.html`, `assets/css/` y `assets/js/`) permite probar los endpoints REST. No es el backend ni sustituye la validación del servidor.

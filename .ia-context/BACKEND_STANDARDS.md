@@ -1,5 +1,7 @@
 # Estándares Backend — API REST PHP
 
+Aplican a la API PHP nativa del proyecto descrita en `.ia-context/DEVELOPMENT_RULES.md`; no asumir el uso de Laravel u otro framework.
+
 ## Diseño
 
 - Implementar endpoints HTTP en `api/` y reutilizar las clases/lógica de `src/`. `includes/` contiene cargadores de compatibilidad.
