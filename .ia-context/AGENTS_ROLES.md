@@ -1,6 +1,6 @@
 # Roles de trabajo asistido — API REST PHP
 
-Antes de asumir un rol, seguir `.ia-context/DEVELOPMENT_RULES.md`, que define el flujo iterativo y la coordinación entre agentes de IA. Estas responsabilidades complementan las reglas generales.
+Antes de asumir un rol, seguir `.ia-context/REGLAS_DESARROLLO.md`, que define el flujo iterativo y la coordinación entre agentes de IA. Estas responsabilidades complementan las reglas generales.
 
 ## Análisis
 

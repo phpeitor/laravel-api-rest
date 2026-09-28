@@ -1,6 +1,6 @@
 # Estándares Frontend — Interfaz de prueba de la API
 
-Estos estándares cubren únicamente la interfaz web de prueba del proyecto PHP nativo y complementan `.ia-context/DEVELOPMENT_RULES.md`.
+Estos estándares cubren únicamente la interfaz web de prueba del proyecto PHP nativo y complementan `.ia-context/REGLAS_DESARROLLO.md`.
 
 ## Alcance
 

@@ -1,6 +1,6 @@
 # Estándares de Base de Datos — API REST PHP
 
-Este documento complementa `.ia-context/DEVELOPMENT_RULES.md`. Mantener la persistencia existente del proyecto; no asumir Laravel, SQL Server ni un ORM.
+Este documento complementa `.ia-context/REGLAS_DESARROLLO.md`. Mantener la persistencia existente del proyecto; no asumir Laravel, SQL Server ni un ORM.
 
 ## Tecnología y ubicación
 
