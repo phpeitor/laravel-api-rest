@@ -19,17 +19,17 @@
 
                 <div class="sidebar-label">WORKSPACE</div>
                 <nav class="side-nav">
-                    <a class="side-link active" href="#overview"><span class="nav-icon" aria-hidden="true">⌂</span>Resumen</a>
-                    <a class="side-link" href="#endpoints"><span class="nav-icon" aria-hidden="true">⇄</span>Endpoints<span class="nav-count">{{ count($endpoints) }}</span></a>
-                    <a class="side-link" href="#playground"><span class="nav-icon" aria-hidden="true">⌘</span>Playground</a>
-                    <a class="side-link" href="#records"><span class="nav-icon" aria-hidden="true">▤</span>Clientes<span class="nav-count">{{ $clientesRegistrados }}</span></a>
+                    <a class="side-link active" href="#overview" data-section-link="overview" aria-current="page"><span class="nav-icon" aria-hidden="true">⌂</span>Resumen</a>
+                    <a class="side-link" href="#endpoints" data-section-link="endpoints"><span class="nav-icon" aria-hidden="true">⇄</span>Endpoints<span class="nav-count">{{ count($endpoints) }}</span></a>
+                    <a class="side-link" href="#playground" data-section-link="playground"><span class="nav-icon" aria-hidden="true">⌘</span>Playground</a>
+                    <a class="side-link" href="#records" data-section-link="records"><span class="nav-icon" aria-hidden="true">▤</span>Clientes<span class="nav-count">{{ $clientesRegistrados }}</span></a>
                 </nav>
 
                 <div class="sidebar-label resource-label">RECURSOS</div>
-                <a class="resource-link" href="#records"><span class="resource-dot"></span><span>Clientes</span><code>/api/clientes</code></a>
+                <a class="resource-link" href="#records" data-section-link="records"><span class="resource-dot"></span><span>Clientes</span><code>/api/clientes</code></a>
 
                 <div class="sidebar-bottom">
-                    <div class="connection-indicator"><span class="status-dot"></span><span><strong>API disponible</strong><small>Entorno local</small></span></div>
+                    <div class="connection-indicator"><span class="status-dot"></span><span><strong data-api-connection>Token requerido</strong><small data-api-connection-detail>Autenticación Bearer</small></span></div>
                     <div class="sidebar-version">Laravel v{{ Illuminate\Foundation\Application::VERSION }}</div>
                 </div>
             </aside>
@@ -39,12 +39,13 @@
                     <div class="breadcrumbs"><span>Workspace</span><span class="crumb-divider">/</span><strong>Clientes</strong></div>
                     <div class="topbar-actions">
                         <span class="environment-chip"><span class="status-dot"></span>Development</span>
+                        <button class="token-trigger" type="button" data-open-token-dialog><span class="status-dot"></span><span data-token-label>Configurar token</span></button>
                         <a class="docs-link" href="#endpoints">Documentación <span aria-hidden="true">↗</span></a>
                     </div>
                 </header>
 
                 <div class="content-wrap">
-                    <section class="page-heading" id="overview">
+                    <section class="page-heading" id="overview" data-page-section>
                         <div>
                             <div class="eyebrow"><span class="eyebrow-dot"></span>REST API <span class="eyebrow-separator">·</span> v1</div>
                             <h1>Clientes API</h1>
@@ -60,7 +61,7 @@
                         <article class="metric-card metric-api"><div class="metric-top"><span class="metric-icon green" aria-hidden="true">⌁</span><span class="metric-label">Estado de API</span></div><strong class="api-status"><span class="status-dot"></span>Operativa</strong><span class="metric-foot"><code>{{ url('/api/clientes') }}</code></span></article>
                     </section>
 
-                    <section class="surface endpoints-section" id="endpoints">
+                    <section class="surface endpoints-section" id="endpoints" data-page-section>
                         <div class="section-heading">
                             <div><span class="section-kicker">REFERENCIA</span><h2>Endpoints</h2><p>Operaciones disponibles para el recurso <code>clientes</code>.</p></div>
                             <span class="version-tag">Base URL <code>{{ url('/api') }}</code></span>
@@ -85,7 +86,7 @@
                         <div class="endpoint-note"><span aria-hidden="true">ⓘ</span> Las respuestas de error pueden devolver <code>400</code> para validación o <code>404</code> cuando el cliente no existe.</div>
                     </section>
 
-                    <section class="playground-grid" id="playground">
+                    <section class="playground-grid" id="playground" data-page-section>
                         <div class="surface request-panel">
                             <div class="section-heading compact-heading">
                                 <div><span class="section-kicker">REQUEST BUILDER</span><h2>Playground</h2><p>Envía solicitudes reales a <code>/api/clientes</code>.</p></div>
@@ -159,7 +160,7 @@
                         </section>
                     </section>
 
-                    <section class="surface records-section" id="records">
+                    <section class="surface records-section" id="records" data-page-section>
                         <div class="section-heading records-heading">
                             <div><span class="section-kicker">DATA EXPLORER</span><h2>Clientes</h2><p>Vista paginada de los registros devueltos por la API.</p></div>
                             <button class="button button-quiet" type="button" data-refresh><span aria-hidden="true">↻</span> Actualizar</button>
@@ -178,5 +179,18 @@
                 </div>
             </main>
         </div>
+        <dialog class="token-dialog" data-token-dialog aria-labelledby="token-dialog-title">
+            <form class="token-form" data-token-form>
+                <div class="token-dialog-mark" aria-hidden="true">⌑</div>
+                <span class="section-kicker">AUTHENTICATION</span>
+                <h2 id="token-dialog-title">Conecta con la API</h2>
+                <p>Introduce el token Bearer configurado en el servidor. Se enviará en las solicitudes de esta pestaña y no se guardará en el servidor.</p>
+                <label for="api-token">API token</label>
+                <div class="token-input-wrap"><input id="api-token" name="token" type="password" autocomplete="off" spellcheck="false" placeholder="Pega tu token de acceso" required><button type="button" data-toggle-token aria-label="Mostrar token">Mostrar</button></div>
+                <small class="token-help">El servidor lo valida contra <code>API_TOKEN</code> en el archivo <code>.env</code>.</small>
+                <p class="token-error" data-token-error role="alert" hidden></p>
+                <div class="token-dialog-actions"><button class="button button-quiet" type="button" data-clear-token>Desconectar</button><button class="button button-primary" type="submit" data-token-submit>Validar y conectar <span aria-hidden="true">→</span></button></div>
+            </form>
+        </dialog>
     </body>
 </html>

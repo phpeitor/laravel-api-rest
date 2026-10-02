@@ -53,18 +53,35 @@ DB_USERNAME=sa
 DB_PASSWORD=********
 ```
 
+## Autenticación de la API
+
+Todas las rutas bajo `/api/clientes` requieren un token Bearer. Genera un token aleatorio de al menos 32 bytes y guárdalo únicamente como `API_TOKEN` en `.env` (no lo publiques ni lo incluyas en el repositorio):
+
+```powershell
+php -r "echo bin2hex(random_bytes(32));"
+```
+
+Después de configurar `API_TOKEN`, limpia la caché de configuración y envía el valor en cada solicitud:
+
+```powershell
+php artisan config:clear
+curl.exe -H "Accept: application/json" -H "Authorization: Bearer TU_API_TOKEN" http://127.0.0.1:8000/api/clientes
+```
+
+El panel solicita el token y lo conserva solo en la sesión de la pestaña actual. El middleware compara el token en tiempo constante y falla cerrado con `503` si no hay un secreto configurado. Esta clave compartida es adecuada para desarrollo e integraciones internas; en producción utiliza HTTPS, rota el secreto periódicamente y prefiere credenciales individuales con caducidad y permisos por usuario.
+
 ## Endpoints
 
 ### Tabla de referencia
 
 | Method | Endpoint | Description | Copy/Paste |
 | --- | --- | --- | --- |
-| `GET` | `/api/clientes?page=1&per_page=5` | Lista clientes paginados | `curl -X GET "http://127.0.0.1:8000/api/clientes?page=1&per_page=5" -H "Accept: application/json"` |
-| `GET` | `/api/clientes/{id}` | Consulta un cliente por ID | `curl -X GET "http://127.0.0.1:8000/api/clientes/1" -H "Accept: application/json"` |
+| `GET` | `/api/clientes?page=1&per_page=5` | Lista clientes paginados | `curl -H "Accept: application/json" -H "Authorization: Bearer TU_API_TOKEN" "http://127.0.0.1:8000/api/clientes?page=1&per_page=5"` |
+| `GET` | `/api/clientes/{id}` | Consulta un cliente por ID | `curl -H "Accept: application/json" -H "Authorization: Bearer TU_API_TOKEN" "http://127.0.0.1:8000/api/clientes/1"` |
 | `POST` | `/api/clientes` | Crea un cliente nuevo | Ver ejemplo JSON abajo |
 | `PUT` | `/api/clientes/{id}` | Actualiza un cliente completo | Ver ejemplo JSON abajo |
 | `PATCH` | `/api/clientes` | Actualiza el estado de un cliente | Ver ejemplo JSON abajo |
-| `DELETE` | `/api/clientes/{id}` | Elimina un cliente | `curl -X DELETE "http://127.0.0.1:8000/api/clientes/1" -H "Accept: application/json"` |
+| `DELETE` | `/api/clientes/{id}` | Elimina un cliente | `curl -X DELETE "http://127.0.0.1:8000/api/clientes/1" -H "Accept: application/json" -H "Authorization: Bearer TU_API_TOKEN"` |
 
 ### Ejemplos copiables
 
@@ -73,6 +90,7 @@ DB_PASSWORD=********
 ```http
 GET http://127.0.0.1:8000/api/clientes?page=1&per_page=5
 Accept: application/json
+Authorization: Bearer TU_API_TOKEN
 ```
 
 #### Consultar cliente por ID
@@ -80,6 +98,7 @@ Accept: application/json
 ```http
 GET http://127.0.0.1:8000/api/clientes/1
 Accept: application/json
+Authorization: Bearer TU_API_TOKEN
 ```
 
 #### Crear cliente
@@ -88,6 +107,7 @@ Accept: application/json
 POST http://127.0.0.1:8000/api/clientes
 Content-Type: application/json
 Accept: application/json
+Authorization: Bearer TU_API_TOKEN
 ```
 
 ```json
@@ -104,6 +124,7 @@ Accept: application/json
 ```cmd
 curl -X POST "http://127.0.0.1:8000/api/clientes" ^
   -H "Accept: application/json" ^
+  -H "Authorization: Bearer TU_API_TOKEN" ^
   -H "Content-Type: application/json" ^
   -d "{\"nombre\":\"Alejandro\",\"fecha_cita\":\"2026-05-10\",\"hora_cita\":\"09:30\",\"nombre_medico\":\"Dr. Perez\",\"nombre_centro\":\"Clinica Central\",\"telefono\":\"987654321\"}"
 ```
@@ -114,6 +135,7 @@ curl -X POST "http://127.0.0.1:8000/api/clientes" ^
 PUT http://127.0.0.1:8000/api/clientes/1
 Content-Type: application/json
 Accept: application/json
+Authorization: Bearer TU_API_TOKEN
 ```
 
 ```json
@@ -133,6 +155,7 @@ Accept: application/json
 PATCH http://127.0.0.1:8000/api/clientes
 Content-Type: application/json
 Accept: application/json
+Authorization: Bearer TU_API_TOKEN
 ```
 
 ```json
@@ -147,11 +170,13 @@ Accept: application/json
 ```http
 DELETE http://127.0.0.1:8000/api/clientes/1
 Accept: application/json
+Authorization: Bearer TU_API_TOKEN
 ```
 
 ```cmd
 curl -X DELETE "http://127.0.0.1:8000/api/clientes/1" ^
-  -H "Accept: application/json"
+  -H "Accept: application/json" ^
+  -H "Authorization: Bearer TU_API_TOKEN"
 ```
 
 ## Panel web
@@ -170,7 +195,7 @@ curl -X DELETE "http://127.0.0.1:8000/api/clientes/1" ^
 
 ## Desarrollo
 
-Revisa [`DEVELOPMENT_RULES.md`](DEVELOPMENT_RULES.md) antes de hacer cambios grandes.
+Revisa las reglas de desarrollo en [`.ia-context/REGLAS_DESARROLLO.md`](.ia-context/REGLAS_DESARROLLO.md) antes de hacer cambios grandes.
 
 ## Actualizar VS Code (Windows)
 

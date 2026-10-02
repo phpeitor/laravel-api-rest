@@ -9,6 +9,17 @@ const toastStack = document.querySelector('[data-toast-stack]');
 const paginationControls = document.querySelector('[data-pagination-controls]');
 const paginationSummary = document.querySelector('[data-pagination-summary]');
 const pageSizeSelect = document.querySelector('[data-page-size]');
+const tokenDialog = document.querySelector('[data-token-dialog]');
+const tokenForm = document.querySelector('[data-token-form]');
+const tokenInput = document.querySelector('#api-token');
+const tokenError = document.querySelector('[data-token-error]');
+const tokenTrigger = document.querySelector('[data-open-token-dialog]');
+const tokenLabel = document.querySelector('[data-token-label]');
+const clearTokenButton = document.querySelector('[data-clear-token]');
+const tokenSubmitButton = document.querySelector('[data-token-submit]');
+const apiConnectionLabel = document.querySelector('[data-api-connection]');
+const apiConnectionDetail = document.querySelector('[data-api-connection-detail]');
+let tokenValue = window.sessionStorage.getItem('api-console-bearer-token') ?? '';
 
 const endpoints = {
     list: '/api/clientes',
@@ -107,16 +118,53 @@ const showResponse = (label, method, path, status, payload, elapsed = 0) => {
     }
 };
 
+const updateTokenStatus = (connected) => {
+    tokenTrigger?.classList.toggle('is-connected', connected);
+    if (tokenLabel) tokenLabel.textContent = connected ? 'Token conectado' : 'Configurar token';
+    if (apiConnectionLabel) {
+        apiConnectionLabel.textContent = connected ? 'Token autorizado' : 'Token requerido';
+        apiConnectionLabel.classList.toggle('is-connected', connected);
+    }
+    if (apiConnectionDetail) apiConnectionDetail.textContent = connected ? 'Solicitudes autenticadas' : 'Autenticación Bearer';
+    if (clearTokenButton) clearTokenButton.disabled = !connected;
+};
+
+const promptForToken = (message = '') => {
+    if (tokenError) {
+        tokenError.textContent = message;
+        tokenError.hidden = !message;
+    }
+    if (tokenDialog && !tokenDialog.open) tokenDialog.showModal();
+    window.setTimeout(() => tokenInput?.focus(), 0);
+};
+
+const handleUnauthorized = (response) => {
+    if (response?.status !== 401) return;
+    tokenValue = '';
+    window.sessionStorage.removeItem('api-console-bearer-token');
+    updateTokenStatus(false);
+    promptForToken('El token no es válido o ha sido revocado. Comprueba API_TOKEN en el .env del servidor.');
+};
+
 const getFormData = (form) => Object.fromEntries(new FormData(form).entries());
 
 const fetchJson = async (url, options = {}) => {
     const startedAt = performance.now();
+
+    if (!tokenValue) {
+        return {
+            response: null,
+            payload: { message: 'Configura un token Bearer para usar la API.' },
+            elapsed: 0,
+        };
+    }
 
     try {
         const response = await fetch(url, {
             ...options,
             headers: {
                 Accept: 'application/json',
+                Authorization: `Bearer ${tokenValue}`,
                 ...(options.body ? { 'Content-Type': 'application/json' } : {}),
                 ...(options.headers ?? {}),
             },
@@ -148,6 +196,21 @@ const appendCell = (row, value, className = '') => {
     return cell;
 };
 
+const formatAppointment = (dateValue, timeValue) => {
+    const dateMatch = String(dateValue ?? '').match(/^\d{4}-\d{2}-\d{2}/);
+    const timeMatch = String(timeValue ?? '').match(/\d{2}:\d{2}/);
+    const date = dateMatch
+        ? new Intl.DateTimeFormat('es-PE', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            timeZone: 'UTC',
+        }).format(new Date(`${dateMatch[0]}T00:00:00Z`))
+        : String(dateValue ?? '');
+
+    return [date, timeMatch?.[0]].filter(Boolean).join(' · ') || '—';
+};
+
 const renderClients = (clientes) => {
     if (!clientsTableBody) return;
     clientsTableBody.replaceChildren();
@@ -171,8 +234,7 @@ const renderClients = (clientes) => {
         nameCell.append(name);
         row.append(nameCell);
 
-        const appointment = [cliente.fecha_cita, cliente.hora_cita].filter(Boolean).join(' · ') || '—';
-        appendCell(row, appointment);
+        appendCell(row, formatAppointment(cliente.fecha_cita, cliente.hora_cita));
         appendCell(row, cliente.nombre_medico);
         appendCell(row, cliente.nombre_centro);
         appendCell(row, cliente.telefono);
@@ -265,13 +327,14 @@ const loadClients = async (page = paginationState.currentPage) => {
     showResponse('Listado de clientes', 'GET', path, response?.status ?? 0, payload, elapsed);
 
     if (!response?.ok) {
+        handleUnauthorized(response);
         renderClients([]);
         if (clientsTableBody?.firstElementChild) {
             clientsTableBody.firstElementChild.firstElementChild.textContent = payload?.message ?? 'No se pudo cargar el listado.';
         }
         paginationState.total = 0;
         renderPagination();
-        return;
+        return false;
     }
 
     const pagination = payload.pagination ?? {};
@@ -289,6 +352,7 @@ const loadClients = async (page = paginationState.currentPage) => {
 
     renderClients(payload.clientes ?? []);
     renderPagination();
+    return true;
 };
 
 const requestTabData = {
@@ -323,6 +387,46 @@ document.querySelectorAll('[data-request-tab]').forEach((tab) => {
     tab.addEventListener('click', () => selectRequestTab(tab.dataset.requestTab));
 });
 
+const sectionLinks = [...document.querySelectorAll('[data-section-link]')];
+const pageSections = [...document.querySelectorAll('[data-page-section]')];
+
+const setActiveSection = (sectionId) => {
+    sectionLinks.forEach((link) => {
+        const active = link.dataset.sectionLink === sectionId;
+        link.classList.toggle('active', active);
+        if (active) link.setAttribute('aria-current', 'page');
+        else link.removeAttribute('aria-current');
+    });
+};
+
+const syncActiveSection = () => {
+    if (!pageSections.length) return;
+
+    if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) {
+        setActiveSection(pageSections.at(-1).id);
+        return;
+    }
+
+    const marker = 115;
+    const section = pageSections.find((item) => {
+        const bounds = item.getBoundingClientRect();
+        return bounds.top <= marker && bounds.bottom > marker;
+    });
+    if (section) setActiveSection(section.id);
+};
+
+sectionLinks.forEach((link) => {
+    link.addEventListener('click', () => setActiveSection(link.dataset.sectionLink));
+});
+window.addEventListener('scroll', syncActiveSection, { passive: true });
+window.addEventListener('resize', syncActiveSection);
+window.addEventListener('hashchange', () => setActiveSection(window.location.hash.slice(1) || 'overview'));
+window.requestAnimationFrame(() => {
+    const initialSection = window.location.hash.slice(1);
+    setActiveSection(pageSections.some((section) => section.id === initialSection) ? initialSection : 'overview');
+    syncActiveSection();
+});
+
 document.querySelectorAll('[data-endpoint-method]').forEach((link) => {
     link.addEventListener('click', () => {
         if (link.dataset.endpointMethod === 'GET' && link.dataset.endpointPath === endpoints.list) {
@@ -339,6 +443,69 @@ document.querySelector('[data-scroll-playground]')?.addEventListener('click', ()
     selectRequestTab('create');
     document.querySelector('#playground')?.scrollIntoView({ behavior: 'smooth' });
     forms.create?.querySelector('input')?.focus({ preventScroll: true });
+});
+
+tokenTrigger?.addEventListener('click', () => promptForToken());
+tokenDialog?.addEventListener('cancel', (event) => {
+    if (!tokenValue) event.preventDefault();
+});
+
+document.querySelector('[data-toggle-token]')?.addEventListener('click', (event) => {
+    if (!tokenInput) return;
+    const showToken = tokenInput.type === 'password';
+    tokenInput.type = showToken ? 'text' : 'password';
+    event.currentTarget.textContent = showToken ? 'Ocultar' : 'Mostrar';
+    event.currentTarget.setAttribute('aria-label', showToken ? 'Ocultar token' : 'Mostrar token');
+});
+
+clearTokenButton?.addEventListener('click', () => {
+    tokenValue = '';
+    window.sessionStorage.removeItem('api-console-bearer-token');
+    updateTokenStatus(false);
+    if (tokenInput) tokenInput.value = '';
+    if (tokenSubmitButton) tokenSubmitButton.innerHTML = 'Validar y conectar <span aria-hidden="true">→</span>';
+    if (tokenError) tokenError.hidden = true;
+    tokenInput?.focus();
+});
+
+tokenForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const candidate = tokenInput?.value.trim() ?? '';
+    if (!candidate) {
+        promptForToken('El token es obligatorio.');
+        return;
+    }
+
+    const previousToken = window.sessionStorage.getItem('api-console-bearer-token') ?? '';
+    tokenValue = candidate;
+    if (tokenSubmitButton) {
+        tokenSubmitButton.disabled = true;
+        tokenSubmitButton.textContent = 'Validando…';
+    }
+    if (tokenError) tokenError.hidden = true;
+
+    const connected = await loadClients(1);
+    if (connected) {
+        window.sessionStorage.setItem('api-console-bearer-token', candidate);
+        updateTokenStatus(true);
+        tokenInput.value = '';
+        tokenDialog?.close();
+        showToast('success', 'Token validado. Conexión autorizada.');
+    } else {
+        tokenValue = previousToken;
+        if (previousToken) window.sessionStorage.setItem('api-console-bearer-token', previousToken);
+        else window.sessionStorage.removeItem('api-console-bearer-token');
+        updateTokenStatus(Boolean(previousToken));
+        if (tokenError && !tokenError.textContent) {
+            tokenError.textContent = 'No se pudo validar el token. Comprueba la conexión con la API.';
+            tokenError.hidden = false;
+        }
+    }
+
+    if (tokenSubmitButton) {
+        tokenSubmitButton.disabled = false;
+        tokenSubmitButton.innerHTML = 'Validar y conectar <span aria-hidden="true">→</span>';
+    }
 });
 
 const bindForm = (form, type, successMessage) => {
@@ -371,6 +538,7 @@ const bindForm = (form, type, successMessage) => {
 
             const { response, payload, elapsed } = await fetchJson(requestPath, requestOptions);
             showResponse(`${method} ${type === 'create' ? '· Crear cliente' : ''}`.trim(), method, requestPath, response?.status ?? 0, payload, elapsed);
+            handleUnauthorized(response);
             notifyResponse(response, payload, successMessage);
 
             if (response?.ok && ['create', 'update', 'partial', 'delete'].includes(type)) {
@@ -412,7 +580,14 @@ copyResponseButton?.addEventListener('click', async () => {
     }
 });
 
-loadClients().catch((error) => {
-    showResponse('Error al cargar clientes', 'GET', endpoints.list, 0, { message: error.message }, 0);
-    showToast('error', 'No se pudo cargar el listado de clientes.');
-});
+updateTokenStatus(Boolean(tokenValue));
+if (tokenValue) {
+    loadClients().then((connected) => {
+        if (!connected && !tokenValue) promptForToken('Token requerido. Configura un token válido para continuar.');
+    }).catch((error) => {
+        showResponse('Error al cargar clientes', 'GET', endpoints.list, 0, { message: error.message }, 0);
+        showToast('error', 'No se pudo cargar el listado de clientes.');
+    });
+} else {
+    promptForToken('La API está protegida. Introduce el token para comenzar.');
+}
