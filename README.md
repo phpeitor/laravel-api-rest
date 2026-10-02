@@ -6,279 +6,297 @@
 
 [![Video Demo](https://img.shields.io/badge/YouTube-FF0000?style=for-the-badge&logo=youtube)](https://www.youtube.com/watch?v=qgyMLh8dh5g)
 
-## Vista rápida
+## Contenido
 
-| Campo | Valor |
-| --- | --- |
-| Framework | Laravel 11 |
-| PHP | 8.2 o superior |
-| Base de datos | SQL Server (`sqlsrv`) |
-| Panel web | `http://127.0.0.1:8000` |
-| API principal | `/api/v2/clientes` |
+- [Funcionalidades](#funcionalidades)
+- [Requisitos](#requisitos)
+- [Instalación local](#instalación-local)
+- [Configuración](#configuración)
+- [Autenticación](#autenticación)
+- [API v2](#api-v2)
+- [Consola web](#consola-web)
+- [Pruebas y comandos](#pruebas-y-comandos)
+- [Estructura](#estructura)
+- [Utilidad opcional para VS Code](#utilidad-opcional-para-vs-code-windows)
 
-## Qué incluye
+## Funcionalidades
 
-- CRUD completo de clientes
-- Validación de fecha y hora de cita
-- Validación de teléfono numérico y único
-- Listado paginado
-- Notificaciones visuales para errores y éxito
-- Panel web moderno para probar la API
+- CRUD de clientes y consulta/actualización del estado.
+- Validación en el servidor de campos, fechas de cita y teléfono al crear.
+- Listado ordenado por ID descendente y paginado; el tamaño de página se limita a 25.
+- Consola web adaptable con catálogo de endpoints, playground, tabla paginada y visor de respuestas HTTP/JSON.
+- Autenticación Bearer requerida en cada operación de la API y límite de 60 solicitudes por minuto.
 
-## Inicio rápido
+## Requisitos
 
-```cmd
-php artisan optimize:clear
-php artisan migrate
-php artisan serve
+- PHP 8.2 o superior con las extensiones que requiere Laravel y los drivers `sqlsrv` y `pdo_sqlsrv`.
+- Microsoft ODBC Driver para SQL Server, compatible con los drivers PHP instalados.
+- Composer 2.
+- Node.js y npm.
+- Una instancia SQL Server accesible y una base de datos creada para este proyecto.
+
+Comprueba la versión de PHP y que los drivers estén cargados:
+
+```powershell
+php -v
+php -m | Select-String 'sqlsrv|pdo_sqlsrv'
 ```
 
-## Frontend
+## Instalación local
 
-```cmd
-npm install
+Ejecuta desde la raíz del repositorio en PowerShell:
+
+```powershell
+composer install
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+php artisan key:generate
+npm ci
+```
+
+Configura las variables de base de datos y `API_TOKEN` según [Configuración](#configuración) y después ejecuta:
+
+```powershell
+php artisan config:clear
+php artisan migrate
 npm run build
 ```
 
-## Variables de entorno
+Para desarrollo, inicia Laravel y Vite en terminales separadas:
 
-El proyecto usa SQL Server por defecto. Revisa estos valores en `.env`:
+```powershell
+php artisan serve
+```
+
+```powershell
+npm run dev
+```
+
+Abre `http://127.0.0.1:8000`. Para servir los recursos compilados, detén Vite y mantén `npm run build` actualizado.
+
+Las migraciones crean las tablas de la aplicación; la base de datos de SQL Server debe existir antes de ejecutarlas.
+
+## Configuración
+
+`.env.example` documenta las variables. Edita el `.env` local —ignorado por Git— con los datos de tu entorno:
 
 ```dotenv
+APP_ENV=local
+APP_DEBUG=true
+APP_URL=http://127.0.0.1:8000
+
 DB_CONNECTION=sqlsrv
 DB_HOST=127.0.0.1
 DB_PORT=1433
-DB_DATABASE=BD_TEST
+DB_DATABASE=BD_CLINICA
 DB_USERNAME=sa
-DB_PASSWORD=********
+DB_PASSWORD=CAMBIA_ESTA_CLAVE
+DB_ENCRYPT=yes
+DB_TRUST_SERVER_CERTIFICATE=false
+
+API_TOKEN=REEMPLAZA_POR_UN_SECRETO_ALEATORIO
 ```
 
-## Autenticación de la API
+Adapta el host, la base, el usuario y la contraseña. Si ODBC 18 rechaza un certificado autofirmado en un entorno local controlado, `DB_TRUST_SERVER_CERTIFICATE=true` permite confiar en el certificado presentado mientras mantiene el cifrado; usa un certificado de confianza y mantén la verificación habilitada en producción.
 
-Todas las rutas bajo `/api/v2/clientes` requieren un token Bearer. Genera un token aleatorio de al menos 32 bytes y guárdalo únicamente como `API_TOKEN` en `.env` (no lo publiques ni lo incluyas en el repositorio):
+No publiques `.env`, contraseñas ni tokens. Los valores de ejemplo no deben reutilizarse en despliegues.
+
+## Autenticación
+
+Genera un token aleatorio de 32 bytes o más y configura su valor como `API_TOKEN` en `.env`:
 
 ```powershell
 php -r "echo bin2hex(random_bytes(32));"
 ```
 
-Después de configurar `API_TOKEN`, limpia la caché de configuración y envía el valor en cada solicitud:
+Después de cambiar la variable, limpia la configuración almacenada en caché:
 
 ```powershell
 php artisan config:clear
-curl.exe -H "Accept: application/json" -H "Authorization: Bearer TU_API_TOKEN" http://127.0.0.1:8000/api/v2/clientes
 ```
 
-El playground proporciona un campo Bearer independiente para cada operación y el explorador de datos tiene su propio campo para `GET` y paginación. El token solo se envía en el encabezado de esa solicitud; no se guarda en almacenamiento del navegador ni se agrega al cuerpo JSON. El middleware compara el token en tiempo constante y falla cerrado con `503` si no hay un secreto configurado. Esta clave compartida es adecuada para desarrollo e integraciones internas; en producción utiliza HTTPS, rota el secreto periódicamente y prefiere credenciales individuales con caducidad y permisos por usuario.
+Todas las solicitudes a `/api/v2/clientes` deben incluir:
 
-## Endpoints
+```http
+Authorization: Bearer TU_API_TOKEN
+Accept: application/json
+```
 
-### Tabla de referencia
+La consola solicita el token en cada operación del playground y por separado para el explorador paginado. Solo lo envía en el encabezado de esa petición; no lo incluye en el cuerpo ni lo persiste en el almacenamiento del navegador.
 
-| Method | Endpoint | Description | Copy/Paste |
+El backend compara el token en tiempo constante. Devuelve `401` si falta o no coincide, y falla cerrado con `503` si `API_TOKEN` no está configurado. Las rutas también están limitadas a 60 solicitudes por minuto.
+
+Esta implementación utiliza una clave compartida sin caducidad ni permisos por usuario; está pensada para desarrollo e integraciones internas. Para producción, sirve la aplicación sobre HTTPS, rota el secreto y considera autenticación individual con caducidad y autorización por recurso.
+
+## API v2
+
+**Base URL local:** `http://127.0.0.1:8000/api/v2`
+
+La versión forma parte de la ruta. Usa `/api/v2/clientes`; la ruta anterior sin versión (`/api/clientes`) no está registrada.
+
+| Método | Ruta | Descripción | Éxito |
 | --- | --- | --- | --- |
-| `GET` | `/api/v2/clientes?page=1&per_page=5` | Lista clientes paginados | `curl -H "Accept: application/json" -H "Authorization: Bearer TU_API_TOKEN" "http://127.0.0.1:8000/api/v2/clientes?page=1&per_page=5"` |
-| `GET` | `/api/v2/clientes/{id}` | Consulta un cliente por ID | `curl -H "Accept: application/json" -H "Authorization: Bearer TU_API_TOKEN" "http://127.0.0.1:8000/api/v2/clientes/1"` |
-| `POST` | `/api/v2/clientes` | Crea un cliente nuevo | Ver ejemplo JSON abajo |
-| `PUT` | `/api/v2/clientes/{id}` | Actualiza un cliente completo | Ver ejemplo JSON abajo |
-| `PATCH` | `/api/v2/clientes` | Actualiza el estado de un cliente | Ver ejemplo JSON abajo |
-| `DELETE` | `/api/v2/clientes/{id}` | Elimina un cliente | `curl -X DELETE "http://127.0.0.1:8000/api/v2/clientes/1" -H "Accept: application/json" -H "Authorization: Bearer TU_API_TOKEN"` |
+| `GET` | `/clientes?page=1&per_page=5` | Lista clientes paginados | `200` |
+| `GET` | `/clientes/{id}` | Obtiene un cliente | `200` |
+| `POST` | `/clientes` | Crea un cliente | `201` |
+| `PUT` | `/clientes/{id}` | Actualiza los datos del cliente | `200` |
+| `PATCH` | `/clientes` | Actualiza el estado de un cliente pendiente | `200` |
+| `DELETE` | `/clientes/{id}` | Elimina un cliente | `200` |
 
-### Ejemplos copiables
+Todas las rutas requieren `Authorization: Bearer TU_API_TOKEN` y aceptan `Accept: application/json`. Las operaciones con cuerpo reciben JSON.
 
-#### Listar clientes
+### Listar clientes
 
-```http
-GET http://127.0.0.1:8000/api/v2/clientes?page=1&per_page=5
-Accept: application/json
-Authorization: Bearer TU_API_TOKEN
-```
+Parámetros: `page` (página solicitada) y `per_page` (por defecto `5`, máximo `25`). Los resultados se ordenan por ID descendente.
 
-#### Consultar cliente por ID
-
-```http
-GET http://127.0.0.1:8000/api/v2/clientes/1
-Accept: application/json
-Authorization: Bearer TU_API_TOKEN
-```
-
-#### Crear cliente
-
-```http
-POST http://127.0.0.1:8000/api/v2/clientes
-Content-Type: application/json
-Accept: application/json
-Authorization: Bearer TU_API_TOKEN
-```
-
-```json
-{
-  "nombre": "Alejandro",
-  "fecha_cita": "2026-05-10",
-  "hora_cita": "09:30",
-  "nombre_medico": "Dr. Perez",
-  "nombre_centro": "Clinica Central",
-  "telefono": "987654321"
+```powershell
+$baseUrl = 'http://127.0.0.1:8000/api/v2'
+$token = 'TU_API_TOKEN'
+$headers = @{
+    Accept = 'application/json'
+    Authorization = "Bearer $token"
 }
+
+Invoke-RestMethod -Uri "$baseUrl/clientes?page=1&per_page=5" -Headers $headers
 ```
 
-```cmd
-curl -X POST "http://127.0.0.1:8000/api/v2/clientes" ^
-  -H "Accept: application/json" ^
-  -H "Authorization: Bearer TU_API_TOKEN" ^
-  -H "Content-Type: application/json" ^
-  -d "{\"nombre\":\"Alejandro\",\"fecha_cita\":\"2026-05-10\",\"hora_cita\":\"09:30\",\"nombre_medico\":\"Dr. Perez\",\"nombre_centro\":\"Clinica Central\",\"telefono\":\"987654321\"}"
+La respuesta contiene `clientes` y `pagination` (`current_page`, `last_page`, `per_page`, `total`, `from`, `to`).
+
+### Consultar un cliente
+
+```powershell
+Invoke-RestMethod -Uri "$baseUrl/clientes/1" -Headers $headers
 ```
 
-#### Actualizar cliente completo
+La operación individual devuelve el objeto bajo `cliente`; sus nombres de propiedades históricos (`Id`, `Paciente`, `Medico`, `FechaCita`, `HoraCita`, `CentroSalud`, `Telefono`, `Estado`) difieren del listado.
 
-```http
-PUT http://127.0.0.1:8000/api/v2/clientes/1
-Content-Type: application/json
-Accept: application/json
-Authorization: Bearer TU_API_TOKEN
+### Crear un cliente
+
+```powershell
+$cliente = @{
+    nombre = 'Ana García'
+    fecha_cita = '2030-06-15'
+    hora_cita = '09:30'
+    nombre_medico = 'Dra. Pérez'
+    nombre_centro = 'Clínica Central'
+    telefono = '900000001'
+} | ConvertTo-Json
+
+Invoke-RestMethod -Method Post `
+    -Uri "$baseUrl/clientes" `
+    -Headers $headers `
+    -ContentType 'application/json' `
+    -Body $cliente
 ```
 
-```json
-{
-  "nombre": "Alejandro Actualizado",
-  "fecha_cita": "2026-09-11",
-  "hora_cita": "10:15",
-  "nombre_medico": "Dr. Trux",
-  "nombre_centro": "Clinica Norte",
-  "telefono": "912345678"
-}
+El teléfono debe tener exactamente nueve dígitos y ser único al crear. La fecha no puede ser anterior al día actual; si la cita es hoy, la hora debe ser igual o posterior a la hora actual. Los nombres de campos obligatorios se muestran en el ejemplo.
+
+### Actualizar un cliente
+
+`PUT` reemplaza los campos del cliente. La validación requiere nombre, fecha, hora, médico, centro y un teléfono de nueve dígitos.
+
+```powershell
+$clienteActualizado = @{
+    nombre = 'Ana García'
+    fecha_cita = '2030-06-16'
+    hora_cita = '10:15'
+    nombre_medico = 'Dra. Pérez'
+    nombre_centro = 'Clínica Norte'
+    telefono = '900000002'
+} | ConvertTo-Json
+
+Invoke-RestMethod -Method Put `
+    -Uri "$baseUrl/clientes/1" `
+    -Headers $headers `
+    -ContentType 'application/json' `
+    -Body $clienteActualizado
 ```
 
-#### Actualizar estado
+### Actualizar el estado
 
-```http
-PATCH http://127.0.0.1:8000/api/v2/clientes
-Content-Type: application/json
-Accept: application/json
-Authorization: Bearer TU_API_TOKEN
+`PATCH /clientes` recibe un `id` y un `estado` de hasta 10 caracteres. Solo actualiza clientes que actualmente estén en estado `PENDIENTE`.
+
+```powershell
+$cambioEstado = @{ id = 1; estado = 'CONFIRMADO' } | ConvertTo-Json
+
+Invoke-RestMethod -Method Patch `
+    -Uri "$baseUrl/clientes" `
+    -Headers $headers `
+    -ContentType 'application/json' `
+    -Body $cambioEstado
 ```
 
-```json
-{
-  "id": 1,
-  "estado": "CONFIRMADO"
-}
+### Eliminar un cliente
+
+```powershell
+Invoke-RestMethod -Method Delete -Uri "$baseUrl/clientes/1" -Headers $headers
 ```
 
-#### Eliminar cliente
+### Códigos de respuesta
 
-```http
-DELETE http://127.0.0.1:8000/api/v2/clientes/1
-Accept: application/json
-Authorization: Bearer TU_API_TOKEN
-```
+| Código | Uso |
+| --- | --- |
+| `200` | Consulta o modificación correcta |
+| `201` | Cliente creado |
+| `400` | Datos inválidos o transición de estado no permitida |
+| `401` | Token Bearer ausente o inválido |
+| `404` | Cliente no encontrado |
+| `405` | Método HTTP no admitido para la ruta |
+| `429` | Límite de solicitudes excedido |
+| `503` | Token de API no configurado en el servidor |
+| `500` | Error interno del servidor |
 
-```cmd
-curl -X DELETE "http://127.0.0.1:8000/api/v2/clientes/1" ^
-  -H "Accept: application/json" ^
-  -H "Authorization: Bearer TU_API_TOKEN"
-```
+Los errores de validación incluyen un `message` y un objeto `errors` con el detalle por campo. El status HTTP es la fuente autoritativa del resultado.
 
-## Panel web
+## Consola web
 
-- La página principal está en `/`
-- El listado se carga desde la API con paginación
-- Las alertas de error y éxito aparecen en pantalla
-- Los formularios de creación, consulta, actualización y eliminación están listos para pruebas rápidas
+La página `/` incluye navegación por secciones, catálogo de rutas, playground para cada operación y explorador paginado. Cada operación tiene su campo Bearer; el listado tiene uno independiente que se utiliza para la consulta y paginación. El menú lateral puede contraerse y expandirse.
 
-## Notas importantes
+La interfaz usa archivos separados para Blade, CSS y JavaScript. Los datos recibidos de la API se insertan como texto y las respuestas JSON se pueden copiar desde el panel.
 
-- El proyecto usa archivos dedicados en `resources/css/` y `resources/js/`.
-- No se mezcla CSS/JS dentro de Blade.
-- El listado de clientes se pagina desde el backend.
-- La app valida fechas y horas antes de crear un cliente.
+## Pruebas y comandos
 
-## Desarrollo
-
-Revisa las reglas de desarrollo en [`.ia-context/REGLAS_DESARROLLO.md`](.ia-context/REGLAS_DESARROLLO.md) antes de hacer cambios grandes.
-
-## Actualizar VS Code (Windows)
-
-El proyecto incluye un comando Artisan y un Job para facilitar la instalación/activación de la fuente `Dank Mono` en entornos Windows.
-
-- Comando Artisan: `vscode:update-font`
-  - Detecta si el sistema es Windows.
-  - Si la fuente no está instalada, ofrece lanzar `resources/fonts/font.bat` con la opción `--install`.
-  - Si la fuente existe, realiza un respaldo de `settings.json` y actualiza `editor.fontFamily` y `editor.fontLigatures`.
-
-Ejemplos:
-
-```bash
-# Solo actualizar settings.json (requiere que la fuente ya esté instalada)
-php artisan vscode:update-font
-
-# Intentar ejecutar el instalador .bat (resources/fonts/font.bat) si la fuente falta
-php artisan vscode:update-font --install
-```
-
-- Job: `App\Jobs\UpdateVSCodeFontJob`
-  - El job ejecuta el comando `vscode:update-font` y está pensado para ser despachado desde la aplicación o scheduler.
-
-Ejemplos para despachar/ejecutar el job:
-
-```bash
-# Despachar al queue (requiere que el sistema de colas esté configurado)
-php artisan tinker --execute="\App\Jobs\UpdateVSCodeFontJob::dispatch();"
-
-# Ejecutar el job directamente (síncrono) desde tinker — útil para pruebas locales
-php artisan tinker --execute="(new \App\Jobs\UpdateVSCodeFontJob())->handle();"
-
-# Levantar un worker para procesar jobs en cola (ejecutará el job despachado arriba)
-php artisan queue:work --once
-```
-
-Notas de seguridad y operativa:
-
-- El comando está pensado para Windows; no debe ejecutarse en Linux/macOS.
-- Antes de escribir en `settings.json` el comando crea un respaldo `settings.json.bak-YYYYMMDDHHIISS`.
-- Si el `.bat` requiere interacción gráfica, ejecutar con `--install` debe hacerse desde una sesión de usuario con GUI.
-- Los logs del Job registran la ejecución y errores en `storage/logs/laravel.log`.
-
-Selección de fuentes disponibles
-
- - Para listar las fuentes que están en `resources/fonts` usa:
-
-```bash
-php artisan vscode:update-font --list
-```
-
- - Para seleccionar una fuente específica (archivo que exista en `resources/fonts`) al instalar/activar:
-
-```bash
-# Instalar y usar 'Dank Mono Italic.ttf' (si existe en resources/fonts)
-php artisan vscode:update-font --install --font="Dank Mono Italic.ttf"
-
-# Solo actualizar settings.json con la fuente seleccionada (sin ejecutar el instalador)
-php artisan vscode:update-font --font="Dank Mono Italic.ttf"
-```
-
-Si el archivo de fuente no existe en `resources/fonts`, el comando mostrará una advertencia y seguirá usando el nombre proporcionado.
-
-Selección interactiva (recomendado)
-
- - Si no pasas `--font`, el comando ahora te pedirá que selecciones una de las fuentes encontradas en `resources/fonts` mediante un menú interactivo. Esto evita errores de tipeo y garantiza que el nombre de archivo sea exacto.
- - Si pasas `--font`, el valor debe coincidir exactamente con un archivo dentro de `resources/fonts`; en caso contrario el comando mostrará un error y listará las opciones disponibles.
-
-Ejemplo (flujo recomendado):
-
-```bash
-# Lista rápida de fuentes
-php artisan vscode:update-font --list
-
-# Ejecuta y selecciona la fuente desde el menú interactivo
-php artisan vscode:update-font --install
-```
-
-
-## Comandos útiles
-
-```cmd
+```powershell
+# Suite completa
 php artisan test
+
+# Pruebas de autenticación Bearer
+php artisan test --filter=ApiTokenTest
+
+# Compilar frontend para producción
 npm run build
+
+# Listar las rutas de la API v2
+php artisan route:list --path=api/v2/clientes -v
+
+# Limpiar cachés de Laravel
 php artisan optimize:clear
+```
+
+## Estructura
+
+```text
+app/Http/Controllers/Api/ClienteController.php  Controladores de API
+app/Http/Middleware/EnsureApiToken.php          Autenticación Bearer
+app/Models/Cliente.php                          Modelo Eloquent
+database/migrations/                            Esquema de SQL Server
+resources/views/dashboard.blade.php             Consola web
+resources/css/app.css                           Estilos del panel
+resources/js/api-dashboard.js                   Interacciones y solicitudes
+routes/api.php                                  Rutas versionadas /api/v2
+routes/web.php                                  Ruta del panel
+tests/Feature/ApiTokenTest.php                  Pruebas de autenticación
+```
+
+## Utilidad opcional para VS Code (Windows)
+
+El proyecto incluye el comando `php artisan vscode:update-font` para configurar una fuente desde `resources/fonts` y actualizar `editor.fontFamily` en la configuración de VS Code. El comando es específico de Windows. Para ver opciones:
+
+```powershell
+php artisan vscode:update-font --list
+```
+
+Para instalar/seleccionar una fuente, inicia el flujo interactivo con:
+
+```powershell
+php artisan vscode:update-font --install
 ```
