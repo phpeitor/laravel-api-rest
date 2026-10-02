@@ -13,7 +13,7 @@ class ApiTokenTest extends TestCase
     {
         config(['services.api_token' => 'expected-test-token']);
 
-        $this->getJson('/api/clientes')
+        $this->getJson('/api/v2/clientes')
             ->assertUnauthorized()
             ->assertJsonPath('message', 'Token Bearer ausente o inválido.');
     }
@@ -23,7 +23,7 @@ class ApiTokenTest extends TestCase
         config(['services.api_token' => 'expected-test-token']);
 
         $this->withToken('wrong-token')
-            ->getJson('/api/clientes')
+            ->getJson('/api/v2/clientes')
             ->assertUnauthorized()
             ->assertHeader('WWW-Authenticate', 'Bearer');
     }
@@ -32,7 +32,7 @@ class ApiTokenTest extends TestCase
     {
         config(['services.api_token' => '']);
 
-        $this->getJson('/api/clientes')
+        $this->getJson('/api/v2/clientes')
             ->assertServiceUnavailable()
             ->assertJsonPath('message', 'La autenticación de la API no está configurada.');
     }
@@ -40,7 +40,7 @@ class ApiTokenTest extends TestCase
     public function test_valid_bearer_token_is_allowed_through_the_middleware(): void
     {
         config(['services.api_token' => 'expected-test-token']);
-        $request = Request::create('/api/clientes', 'GET', [], [], [], [
+        $request = Request::create('/api/v2/clientes', 'GET', [], [], [], [
             'HTTP_AUTHORIZATION' => 'Bearer expected-test-token',
         ]);
 

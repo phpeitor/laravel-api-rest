@@ -14,7 +14,7 @@
 | PHP | 8.2 o superior |
 | Base de datos | SQL Server (`sqlsrv`) |
 | Panel web | `http://127.0.0.1:8000` |
-| API principal | `/api/clientes` |
+| API principal | `/api/v2/clientes` |
 
 ## Qué incluye
 
@@ -46,7 +46,7 @@ El proyecto usa SQL Server por defecto. Revisa estos valores en `.env`:
 
 ```dotenv
 DB_CONNECTION=sqlsrv
-DB_HOST=192.168.1.250
+DB_HOST=127.0.0.1
 DB_PORT=1433
 DB_DATABASE=BD_TEST
 DB_USERNAME=sa
@@ -55,7 +55,7 @@ DB_PASSWORD=********
 
 ## Autenticación de la API
 
-Todas las rutas bajo `/api/clientes` requieren un token Bearer. Genera un token aleatorio de al menos 32 bytes y guárdalo únicamente como `API_TOKEN` en `.env` (no lo publiques ni lo incluyas en el repositorio):
+Todas las rutas bajo `/api/v2/clientes` requieren un token Bearer. Genera un token aleatorio de al menos 32 bytes y guárdalo únicamente como `API_TOKEN` en `.env` (no lo publiques ni lo incluyas en el repositorio):
 
 ```powershell
 php -r "echo bin2hex(random_bytes(32));"
@@ -65,7 +65,7 @@ Después de configurar `API_TOKEN`, limpia la caché de configuración y envía 
 
 ```powershell
 php artisan config:clear
-curl.exe -H "Accept: application/json" -H "Authorization: Bearer TU_API_TOKEN" http://127.0.0.1:8000/api/clientes
+curl.exe -H "Accept: application/json" -H "Authorization: Bearer TU_API_TOKEN" http://127.0.0.1:8000/api/v2/clientes
 ```
 
 El panel solicita el token y lo conserva solo en la sesión de la pestaña actual. El middleware compara el token en tiempo constante y falla cerrado con `503` si no hay un secreto configurado. Esta clave compartida es adecuada para desarrollo e integraciones internas; en producción utiliza HTTPS, rota el secreto periódicamente y prefiere credenciales individuales con caducidad y permisos por usuario.
@@ -76,19 +76,19 @@ El panel solicita el token y lo conserva solo en la sesión de la pestaña actua
 
 | Method | Endpoint | Description | Copy/Paste |
 | --- | --- | --- | --- |
-| `GET` | `/api/clientes?page=1&per_page=5` | Lista clientes paginados | `curl -H "Accept: application/json" -H "Authorization: Bearer TU_API_TOKEN" "http://127.0.0.1:8000/api/clientes?page=1&per_page=5"` |
-| `GET` | `/api/clientes/{id}` | Consulta un cliente por ID | `curl -H "Accept: application/json" -H "Authorization: Bearer TU_API_TOKEN" "http://127.0.0.1:8000/api/clientes/1"` |
-| `POST` | `/api/clientes` | Crea un cliente nuevo | Ver ejemplo JSON abajo |
-| `PUT` | `/api/clientes/{id}` | Actualiza un cliente completo | Ver ejemplo JSON abajo |
-| `PATCH` | `/api/clientes` | Actualiza el estado de un cliente | Ver ejemplo JSON abajo |
-| `DELETE` | `/api/clientes/{id}` | Elimina un cliente | `curl -X DELETE "http://127.0.0.1:8000/api/clientes/1" -H "Accept: application/json" -H "Authorization: Bearer TU_API_TOKEN"` |
+| `GET` | `/api/v2/clientes?page=1&per_page=5` | Lista clientes paginados | `curl -H "Accept: application/json" -H "Authorization: Bearer TU_API_TOKEN" "http://127.0.0.1:8000/api/v2/clientes?page=1&per_page=5"` |
+| `GET` | `/api/v2/clientes/{id}` | Consulta un cliente por ID | `curl -H "Accept: application/json" -H "Authorization: Bearer TU_API_TOKEN" "http://127.0.0.1:8000/api/v2/clientes/1"` |
+| `POST` | `/api/v2/clientes` | Crea un cliente nuevo | Ver ejemplo JSON abajo |
+| `PUT` | `/api/v2/clientes/{id}` | Actualiza un cliente completo | Ver ejemplo JSON abajo |
+| `PATCH` | `/api/v2/clientes` | Actualiza el estado de un cliente | Ver ejemplo JSON abajo |
+| `DELETE` | `/api/v2/clientes/{id}` | Elimina un cliente | `curl -X DELETE "http://127.0.0.1:8000/api/v2/clientes/1" -H "Accept: application/json" -H "Authorization: Bearer TU_API_TOKEN"` |
 
 ### Ejemplos copiables
 
 #### Listar clientes
 
 ```http
-GET http://127.0.0.1:8000/api/clientes?page=1&per_page=5
+GET http://127.0.0.1:8000/api/v2/clientes?page=1&per_page=5
 Accept: application/json
 Authorization: Bearer TU_API_TOKEN
 ```
@@ -96,7 +96,7 @@ Authorization: Bearer TU_API_TOKEN
 #### Consultar cliente por ID
 
 ```http
-GET http://127.0.0.1:8000/api/clientes/1
+GET http://127.0.0.1:8000/api/v2/clientes/1
 Accept: application/json
 Authorization: Bearer TU_API_TOKEN
 ```
@@ -104,7 +104,7 @@ Authorization: Bearer TU_API_TOKEN
 #### Crear cliente
 
 ```http
-POST http://127.0.0.1:8000/api/clientes
+POST http://127.0.0.1:8000/api/v2/clientes
 Content-Type: application/json
 Accept: application/json
 Authorization: Bearer TU_API_TOKEN
@@ -122,7 +122,7 @@ Authorization: Bearer TU_API_TOKEN
 ```
 
 ```cmd
-curl -X POST "http://127.0.0.1:8000/api/clientes" ^
+curl -X POST "http://127.0.0.1:8000/api/v2/clientes" ^
   -H "Accept: application/json" ^
   -H "Authorization: Bearer TU_API_TOKEN" ^
   -H "Content-Type: application/json" ^
@@ -132,7 +132,7 @@ curl -X POST "http://127.0.0.1:8000/api/clientes" ^
 #### Actualizar cliente completo
 
 ```http
-PUT http://127.0.0.1:8000/api/clientes/1
+PUT http://127.0.0.1:8000/api/v2/clientes/1
 Content-Type: application/json
 Accept: application/json
 Authorization: Bearer TU_API_TOKEN
@@ -141,7 +141,7 @@ Authorization: Bearer TU_API_TOKEN
 ```json
 {
   "nombre": "Alejandro Actualizado",
-  "fecha_cita": "2026-05-11",
+  "fecha_cita": "2026-09-11",
   "hora_cita": "10:15",
   "nombre_medico": "Dr. Trux",
   "nombre_centro": "Clinica Norte",
@@ -152,7 +152,7 @@ Authorization: Bearer TU_API_TOKEN
 #### Actualizar estado
 
 ```http
-PATCH http://127.0.0.1:8000/api/clientes
+PATCH http://127.0.0.1:8000/api/v2/clientes
 Content-Type: application/json
 Accept: application/json
 Authorization: Bearer TU_API_TOKEN
@@ -168,13 +168,13 @@ Authorization: Bearer TU_API_TOKEN
 #### Eliminar cliente
 
 ```http
-DELETE http://127.0.0.1:8000/api/clientes/1
+DELETE http://127.0.0.1:8000/api/v2/clientes/1
 Accept: application/json
 Authorization: Bearer TU_API_TOKEN
 ```
 
 ```cmd
-curl -X DELETE "http://127.0.0.1:8000/api/clientes/1" ^
+curl -X DELETE "http://127.0.0.1:8000/api/v2/clientes/1" ^
   -H "Accept: application/json" ^
   -H "Authorization: Bearer TU_API_TOKEN"
 ```

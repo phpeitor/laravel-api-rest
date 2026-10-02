@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\ClienteController;
 use App\Http\Middleware\EnsureApiToken;
 
-Route::middleware([EnsureApiToken::class, 'throttle:60,1'])->group(function () {
+Route::prefix('v2')->middleware([EnsureApiToken::class, 'throttle:60,1'])->group(function () {
     Route::get('/clientes', [ClienteController::class, 'index']);
 
     Route::get('/clientes/{id}', [ClienteController::class, 'show']);

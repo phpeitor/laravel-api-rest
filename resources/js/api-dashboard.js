@@ -22,12 +22,12 @@ const apiConnectionDetail = document.querySelector('[data-api-connection-detail]
 let tokenValue = window.sessionStorage.getItem('api-console-bearer-token') ?? '';
 
 const endpoints = {
-    list: '/api/clientes',
-    show: (id) => `/api/clientes/${encodeURIComponent(id)}`,
-    create: '/api/clientes',
-    update: (id) => `/api/clientes/${encodeURIComponent(id)}`,
-    partial: '/api/clientes',
-    delete: (id) => `/api/clientes/${encodeURIComponent(id)}`,
+    list: '/api/v2/clientes',
+    show: (id) => `/api/v2/clientes/${encodeURIComponent(id)}`,
+    create: '/api/v2/clientes',
+    update: (id) => `/api/v2/clientes/${encodeURIComponent(id)}`,
+    partial: '/api/v2/clientes',
+    delete: (id) => `/api/v2/clientes/${encodeURIComponent(id)}`,
 };
 
 const forms = {
@@ -40,7 +40,7 @@ const forms = {
 };
 
 const requestInfo = {
-    create: { method: 'POST', path: '/api/clientes' },
+    create: { method: 'POST', path: '/api/v2/clientes' },
     show: { method: 'GET', path: (data) => endpoints.show(data.id) },
     update: { method: 'PUT', path: (data) => endpoints.update(data.id) },
     partial: { method: 'PATCH', path: endpoints.partial },
@@ -356,11 +356,11 @@ const loadClients = async (page = paginationState.currentPage) => {
 };
 
 const requestTabData = {
-    create: { method: 'POST', path: '/api/clientes' },
-    show: { method: 'GET', path: '/api/clientes/{id}' },
-    update: { method: 'PUT', path: '/api/clientes/{id}' },
-    partial: { method: 'PATCH', path: '/api/clientes' },
-    delete: { method: 'DELETE', path: '/api/clientes/{id}' },
+    create: { method: 'POST', path: '/api/v2/clientes' },
+    show: { method: 'GET', path: '/api/v2/clientes/{id}' },
+    update: { method: 'PUT', path: '/api/v2/clientes/{id}' },
+    partial: { method: 'PATCH', path: '/api/v2/clientes' },
+    delete: { method: 'DELETE', path: '/api/v2/clientes/{id}' },
 };
 
 const selectRequestTab = (tabName) => {
@@ -446,6 +446,9 @@ document.querySelector('[data-scroll-playground]')?.addEventListener('click', ()
 });
 
 tokenTrigger?.addEventListener('click', () => promptForToken());
+tokenInput?.addEventListener('input', () => {
+    if (tokenError) tokenError.hidden = true;
+});
 tokenDialog?.addEventListener('cancel', (event) => {
     if (!tokenValue) event.preventDefault();
 });
@@ -454,8 +457,21 @@ document.querySelector('[data-toggle-token]')?.addEventListener('click', (event)
     if (!tokenInput) return;
     const showToken = tokenInput.type === 'password';
     tokenInput.type = showToken ? 'text' : 'password';
-    event.currentTarget.textContent = showToken ? 'Ocultar' : 'Mostrar';
+    event.currentTarget.querySelector('span').textContent = showToken ? 'Ocultar' : 'Mostrar';
     event.currentTarget.setAttribute('aria-label', showToken ? 'Ocultar token' : 'Mostrar token');
+});
+
+document.querySelector('[data-close-token]')?.addEventListener('click', () => {
+    if (tokenValue) {
+        tokenDialog?.close();
+        return;
+    }
+
+    if (tokenError) {
+        tokenError.textContent = 'Se requiere un token válido para acceder a la API.';
+        tokenError.hidden = false;
+    }
+    tokenInput?.focus();
 });
 
 clearTokenButton?.addEventListener('click', () => {
@@ -504,7 +520,7 @@ tokenForm?.addEventListener('submit', async (event) => {
 
     if (tokenSubmitButton) {
         tokenSubmitButton.disabled = false;
-        tokenSubmitButton.innerHTML = 'Validar y conectar <span aria-hidden="true">→</span>';
+        tokenSubmitButton.innerHTML = 'Validar y conectar <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>';
     }
 });
 
@@ -589,5 +605,5 @@ if (tokenValue) {
         showToast('error', 'No se pudo cargar el listado de clientes.');
     });
 } else {
-    promptForToken('La API está protegida. Introduce el token para comenzar.');
+    promptForToken();
 }
