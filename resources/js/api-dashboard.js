@@ -1,18 +1,22 @@
 const responseOutput = document.querySelector('[data-response-output]');
 const responseStatus = document.querySelector('[data-response-status]');
 const responseTitle = document.querySelector('[data-response-title]');
+const responseTime = document.querySelector('[data-response-time]');
+const responseRequest = document.querySelector('[data-response-request]');
+const copyResponseButton = document.querySelector('[data-copy-response]');
 const clientsTableBody = document.querySelector('[data-clients-body]');
 const toastStack = document.querySelector('[data-toast-stack]');
 const paginationControls = document.querySelector('[data-pagination-controls]');
 const paginationSummary = document.querySelector('[data-pagination-summary]');
+const pageSizeSelect = document.querySelector('[data-page-size]');
 
 const endpoints = {
     list: '/api/clientes',
-    show: (id) => `/api/clientes/${id}`,
+    show: (id) => `/api/clientes/${encodeURIComponent(id)}`,
     create: '/api/clientes',
-    update: (id) => `/api/clientes/${id}`,
+    update: (id) => `/api/clientes/${encodeURIComponent(id)}`,
     partial: '/api/clientes',
-    delete: (id) => `/api/clientes/${id}`,
+    delete: (id) => `/api/clientes/${encodeURIComponent(id)}`,
 };
 
 const forms = {
@@ -24,46 +28,37 @@ const forms = {
     refresh: document.querySelector('[data-refresh]'),
 };
 
+const requestInfo = {
+    create: { method: 'POST', path: '/api/clientes' },
+    show: { method: 'GET', path: (data) => endpoints.show(data.id) },
+    update: { method: 'PUT', path: (data) => endpoints.update(data.id) },
+    partial: { method: 'PATCH', path: endpoints.partial },
+    delete: { method: 'DELETE', path: (data) => endpoints.delete(data.id) },
+};
+
 const paginationState = {
     currentPage: 1,
     lastPage: 1,
-    perPage: 5,
+    perPage: Number(pageSizeSelect?.value ?? 5),
     total: 0,
     from: 0,
     to: 0,
 };
 
-const todayIsoDate = () => {
-    const now = new Date();
-    const timezoneOffset = now.getTimezoneOffset() * 60000;
-    return new Date(now.getTime() - timezoneOffset).toISOString().slice(0, 10);
-};
-
-const currentIsoMinute = () => {
-    const now = new Date();
-    const timezoneOffset = now.getTimezoneOffset() * 60000;
-    return new Date(now.getTime() - timezoneOffset).toISOString().slice(0, 16);
-};
-
 const showToast = (type, message) => {
-    if (!toastStack) {
-        return;
-    }
+    if (!toastStack) return;
 
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
+    toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
     toast.textContent = message;
     toastStack.prepend(toast);
 
-    window.setTimeout(() => {
-        toast.remove();
-    }, 5000);
+    window.setTimeout(() => toast.remove(), 5000);
 };
 
 const normalizeErrors = (payload) => {
-    if (!payload || typeof payload !== 'object' || !payload.errors) {
-        return [];
-    }
+    if (!payload || typeof payload !== 'object' || !payload.errors) return [];
 
     return Object.values(payload.errors)
         .flat()
@@ -72,275 +67,352 @@ const normalizeErrors = (payload) => {
 };
 
 const notifyResponse = (response, payload, successMessage) => {
-    if (response.ok) {
-        if (successMessage) {
-            showToast('success', successMessage);
-        }
+    if (response?.ok) {
+        if (successMessage) showToast('success', successMessage);
         return;
     }
 
     const errorMessages = normalizeErrors(payload);
-
-    if (errorMessages.length > 0) {
+    if (errorMessages.length) {
         errorMessages.forEach((message) => showToast('error', message));
         return;
     }
 
-    const fallbackMessage = payload?.message ?? 'Ocurrio un error al procesar la solicitud.';
-    showToast('error', fallbackMessage);
+    showToast('error', payload?.message ?? 'No se pudo completar la solicitud.');
 };
 
-const validateCreateForm = (data) => {
-    const errors = [];
-    const today = todayIsoDate();
-    const currentMinute = currentIsoMinute();
-    const selectedDateTime = `${data.fecha_cita ?? ''}T${data.hora_cita ?? ''}`;
-
-    if (!/^\d{9}$/.test(data.telefono ?? '')) {
-        errors.push('El telefono debe tener exactamente 9 digitos numericos.');
-    }
-
-    if ((data.fecha_cita ?? '') < today) {
-        errors.push('La fecha de cita no puede ser menor a la fecha actual.');
-    } else if ((data.fecha_cita ?? '') === today && selectedDateTime < currentMinute) {
-        errors.push('La hora de cita no puede ser menor a la hora actual.');
-    }
-
-    return errors;
-};
-
-const fillStatus = (label, status) => {
+const fillResponseMeta = (label, method, path, status, elapsed) => {
     if (responseTitle) {
-        responseTitle.textContent = label;
+        responseTitle.classList.remove('success', 'error');
+        responseTitle.classList.add(status >= 200 && status < 300 ? 'success' : 'error');
+        responseTitle.lastChild.textContent = ` ${label}`;
     }
 
     if (responseStatus) {
-        responseStatus.textContent = `HTTP ${status}`;
+        responseStatus.textContent = status ? `HTTP ${status}` : 'NETWORK';
+        responseStatus.classList.remove('success', 'error');
+        responseStatus.classList.add(status >= 200 && status < 300 ? 'success' : 'error');
     }
+
+    if (responseTime) responseTime.textContent = `${elapsed} ms`;
+    if (responseRequest) responseRequest.textContent = `${method} ${path}`;
 };
 
-const showResponse = (label, status, payload) => {
-    fillStatus(label, status);
+const showResponse = (label, method, path, status, payload, elapsed = 0) => {
+    fillResponseMeta(label, method, path, status, elapsed);
 
     if (responseOutput) {
-        responseOutput.textContent = JSON.stringify(payload, null, 2);
+        responseOutput.textContent = JSON.stringify(payload ?? {}, null, 2);
+        if (copyResponseButton) copyResponseButton.disabled = false;
     }
 };
 
 const getFormData = (form) => Object.fromEntries(new FormData(form).entries());
 
-const renderClients = (clientes) => {
-    if (!clientsTableBody) {
-        return;
+const fetchJson = async (url, options = {}) => {
+    const startedAt = performance.now();
+
+    try {
+        const response = await fetch(url, {
+            ...options,
+            headers: {
+                Accept: 'application/json',
+                ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+                ...(options.headers ?? {}),
+            },
+        });
+        const responseText = await response.text();
+        let payload;
+
+        try {
+            payload = responseText ? JSON.parse(responseText) : {};
+        } catch {
+            payload = { message: 'El servidor devolvió una respuesta que no es JSON.', raw: responseText };
+        }
+
+        return { response, payload, elapsed: Math.round(performance.now() - startedAt) };
+    } catch (error) {
+        return {
+            response: null,
+            payload: { message: error.message || 'No se pudo conectar con la API.' },
+            elapsed: Math.round(performance.now() - startedAt),
+        };
     }
+};
+
+const appendCell = (row, value, className = '') => {
+    const cell = document.createElement('td');
+    if (className) cell.className = className;
+    cell.textContent = value ?? '—';
+    row.append(cell);
+    return cell;
+};
+
+const renderClients = (clientes) => {
+    if (!clientsTableBody) return;
+    clientsTableBody.replaceChildren();
 
     if (!Array.isArray(clientes) || clientes.length === 0) {
-        clientsTableBody.innerHTML = `
-            <tr>
-                <td colspan="8">Todavía no hay clientes registrados. Usa el formulario superior para crear el primero.</td>
-            </tr>
-        `;
+        const row = document.createElement('tr');
+        const cell = appendCell(row, 'No hay clientes para mostrar. Crea un registro desde el playground.', 'table-message');
+        cell.colSpan = 8;
+        clientsTableBody.append(row);
         return;
     }
 
-    clientsTableBody.innerHTML = clientes.map((cliente) => `
-        <tr>
-            <td>${cliente.id}</td>
-            <td>${cliente.nombre ?? ''}</td>
-            <td>${cliente.fecha_cita ?? ''}</td>
-            <td>${cliente.hora_cita ?? ''}</td>
-            <td>${cliente.nombre_medico ?? ''}</td>
-            <td>${cliente.nombre_centro ?? ''}</td>
-            <td>${cliente.telefono ?? ''}</td>
-            <td>${cliente.estado ?? ''}</td>
-        </tr>
-    `).join('');
+    clientes.forEach((cliente) => {
+        const row = document.createElement('tr');
+        appendCell(row, cliente.id);
+
+        const nameCell = document.createElement('td');
+        const name = document.createElement('span');
+        name.className = 'client-name';
+        name.textContent = cliente.nombre || '—';
+        nameCell.append(name);
+        row.append(nameCell);
+
+        const appointment = [cliente.fecha_cita, cliente.hora_cita].filter(Boolean).join(' · ') || '—';
+        appendCell(row, appointment);
+        appendCell(row, cliente.nombre_medico);
+        appendCell(row, cliente.nombre_centro);
+        appendCell(row, cliente.telefono);
+
+        const statusCell = document.createElement('td');
+        const status = document.createElement('span');
+        const statusText = String(cliente.estado || 'PENDIENTE');
+        status.className = `client-status ${statusText.toLocaleLowerCase('es').normalize('NFD').replace(/[\u0300-\u036f]/g, '')}`;
+        status.textContent = statusText;
+        statusCell.append(status);
+        row.append(statusCell);
+
+        const actionsCell = document.createElement('td');
+        const viewButton = document.createElement('button');
+        viewButton.type = 'button';
+        viewButton.className = 'pagination-button';
+        viewButton.textContent = 'Ver';
+        viewButton.setAttribute('aria-label', `Consultar cliente ${cliente.id}`);
+        viewButton.addEventListener('click', () => {
+            selectRequestTab('show');
+            const idInput = forms.show?.querySelector('[name="id"]');
+            if (idInput) {
+                idInput.value = cliente.id;
+                forms.show.requestSubmit();
+            }
+            document.querySelector('#playground')?.scrollIntoView({ behavior: 'smooth' });
+        });
+        actionsCell.append(viewButton);
+        row.append(actionsCell);
+        clientsTableBody.append(row);
+    });
 };
 
 const renderPagination = () => {
-    if (!paginationControls) {
-        return;
-    }
+    if (!paginationControls) return;
+    paginationControls.replaceChildren();
 
     const { currentPage, lastPage, total, from, to } = paginationState;
-
-    if (total === 0) {
-        paginationControls.innerHTML = '';
-
-        if (paginationSummary) {
-            paginationSummary.textContent = 'No hay clientes registrados todavía.';
-        }
-
-        return;
-    }
-
     if (paginationSummary) {
-        paginationSummary.textContent = `Mostrando ${from} a ${to} de ${total} clientes`;
+        paginationSummary.textContent = total
+            ? `Mostrando ${from ?? 0}–${to ?? 0} de ${total} clientes`
+            : 'No hay clientes registrados.';
     }
 
-    const pages = [];
-    const windowSize = 5;
-    let start = Math.max(1, currentPage - 2);
-    let end = Math.min(lastPage, start + windowSize - 1);
-    start = Math.max(1, end - windowSize + 1);
+    if (!total || lastPage <= 1) return;
 
-    if (currentPage > 1) {
-        pages.push(`<button class="pagination-button" type="button" data-page="${currentPage - 1}">Anterior</button>`);
-    }
+    const addPageButton = (label, page, { active = false, disabled = false, ariaLabel = label } = {}) => {
+        const button = document.createElement('button');
+        button.className = `pagination-button${active ? ' active' : ''}`;
+        button.type = 'button';
+        button.textContent = label;
+        button.disabled = disabled;
+        button.setAttribute('aria-label', ariaLabel);
+        if (active) button.setAttribute('aria-current', 'page');
+        button.addEventListener('click', () => loadClients(page));
+        paginationControls.append(button);
+    };
 
+    addPageButton('‹', currentPage - 1, { disabled: currentPage <= 1, ariaLabel: 'Página anterior' });
+    const start = Math.max(1, Math.min(currentPage - 2, lastPage - 4));
+    const end = Math.min(lastPage, start + 4);
     for (let page = start; page <= end; page += 1) {
-        pages.push(`
-            <button class="pagination-button ${page === currentPage ? 'active' : ''}" type="button" data-page="${page}">
-                ${page}
-            </button>
-        `);
+        addPageButton(String(page), page, { active: page === currentPage, ariaLabel: `Página ${page}` });
     }
-
-    if (currentPage < lastPage) {
-        pages.push(`<button class="pagination-button" type="button" data-page="${currentPage + 1}">Siguiente</button>`);
-    }
-
-    paginationControls.innerHTML = pages.join('');
-
-    paginationControls.querySelectorAll('[data-page]').forEach((button) => {
-        button.addEventListener('click', () => {
-            loadClients(Number(button.dataset.page ?? 1));
-        });
-    });
+    addPageButton('›', currentPage + 1, { disabled: currentPage >= lastPage, ariaLabel: 'Página siguiente' });
 };
 
-const fetchJson = async (url, options = {}) => {
-    const response = await fetch(url, {
-        headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-            ...(options.headers ?? {}),
-        },
-        ...options,
-    });
+const setLoading = (isLoading) => {
+    if (!clientsTableBody) return;
+    if (!isLoading) return;
 
-    let payload = null;
-
-    try {
-        payload = await response.json();
-    } catch {
-        payload = { message: 'La respuesta no devolvió JSON' };
-    }
-
-    return { response, payload };
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    cell.colSpan = 8;
+    cell.className = 'table-message';
+    const spinner = document.createElement('span');
+    spinner.className = 'loading-spinner';
+    spinner.setAttribute('aria-hidden', 'true');
+    cell.append(spinner, document.createTextNode(' Cargando registros…'));
+    row.append(cell);
+    clientsTableBody.replaceChildren(row);
 };
 
 const loadClients = async (page = paginationState.currentPage) => {
-    const params = new URLSearchParams({
-        page: String(page),
-        per_page: String(paginationState.perPage),
-    });
+    const params = new URLSearchParams({ page: String(page), per_page: String(paginationState.perPage) });
+    const path = `${endpoints.list}?${params.toString()}`;
+    setLoading(true);
 
-    const { response, payload } = await fetchJson(`${endpoints.list}?${params.toString()}`, { method: 'GET' });
+    const { response, payload, elapsed } = await fetchJson(path, { method: 'GET' });
+    showResponse('Listado de clientes', 'GET', path, response?.status ?? 0, payload, elapsed);
 
-    if (response.ok) {
-        const pagination = payload.pagination ?? {};
-
-        paginationState.currentPage = pagination.current_page ?? page;
-        paginationState.lastPage = pagination.last_page ?? 1;
-        paginationState.perPage = pagination.per_page ?? paginationState.perPage;
-        paginationState.total = pagination.total ?? 0;
-        paginationState.from = pagination.from ?? 0;
-        paginationState.to = pagination.to ?? 0;
-
-        if (paginationState.currentPage > paginationState.lastPage && paginationState.lastPage > 0) {
-            await loadClients(paginationState.lastPage);
-            return;
+    if (!response?.ok) {
+        renderClients([]);
+        if (clientsTableBody?.firstElementChild) {
+            clientsTableBody.firstElementChild.firstElementChild.textContent = payload?.message ?? 'No se pudo cargar el listado.';
         }
-
-        renderClients(payload.clientes ?? []);
+        paginationState.total = 0;
         renderPagination();
-    }
-
-    showResponse('Listado de clientes', response.status, payload);
-};
-
-const bindForm = (form, action) => {
-    if (!form) {
         return;
     }
 
+    const pagination = payload.pagination ?? {};
+    paginationState.currentPage = Number(pagination.current_page ?? page);
+    paginationState.lastPage = Number(pagination.last_page ?? 1);
+    paginationState.perPage = Number(pagination.per_page ?? paginationState.perPage);
+    paginationState.total = Number(pagination.total ?? 0);
+    paginationState.from = Number(pagination.from ?? 0);
+    paginationState.to = Number(pagination.to ?? 0);
+
+    if (paginationState.currentPage > paginationState.lastPage && paginationState.lastPage > 0) {
+        await loadClients(paginationState.lastPage);
+        return;
+    }
+
+    renderClients(payload.clientes ?? []);
+    renderPagination();
+};
+
+const requestTabData = {
+    create: { method: 'POST', path: '/api/clientes' },
+    show: { method: 'GET', path: '/api/clientes/{id}' },
+    update: { method: 'PUT', path: '/api/clientes/{id}' },
+    partial: { method: 'PATCH', path: '/api/clientes' },
+    delete: { method: 'DELETE', path: '/api/clientes/{id}' },
+};
+
+const selectRequestTab = (tabName) => {
+    document.querySelectorAll('[data-request-tab]').forEach((tab) => {
+        const selected = tab.dataset.requestTab === tabName;
+        tab.classList.toggle('active', selected);
+        tab.setAttribute('aria-selected', String(selected));
+    });
+    document.querySelectorAll('[data-request-panel]').forEach((panel) => {
+        panel.classList.toggle('is-hidden', panel.dataset.requestPanel !== tabName);
+    });
+
+    const info = requestTabData[tabName];
+    const methodBadge = document.querySelector('[data-active-method]');
+    const path = document.querySelector('[data-active-path]');
+    if (methodBadge && info) {
+        methodBadge.textContent = info.method;
+        methodBadge.className = `method-badge method-${info.method.toLowerCase()}`;
+    }
+    if (path && info) path.textContent = info.path;
+};
+
+document.querySelectorAll('[data-request-tab]').forEach((tab) => {
+    tab.addEventListener('click', () => selectRequestTab(tab.dataset.requestTab));
+});
+
+document.querySelectorAll('[data-endpoint-method]').forEach((link) => {
+    link.addEventListener('click', () => {
+        if (link.dataset.endpointMethod === 'GET' && link.dataset.endpointPath === endpoints.list) {
+            loadClients(1);
+            return;
+        }
+
+        const methodToTab = { GET: 'show', POST: 'create', PUT: 'update', PATCH: 'partial', DELETE: 'delete' };
+        selectRequestTab(methodToTab[link.dataset.endpointMethod] ?? 'create');
+    });
+});
+
+document.querySelector('[data-scroll-playground]')?.addEventListener('click', () => {
+    selectRequestTab('create');
+    document.querySelector('#playground')?.scrollIntoView({ behavior: 'smooth' });
+    forms.create?.querySelector('input')?.focus({ preventScroll: true });
+});
+
+const bindForm = (form, type, successMessage) => {
+    if (!form) return;
+
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
+        const data = getFormData(form);
+        const { method, path } = requestInfo[type];
+        const requestPath = typeof path === 'function' ? path(data) : path;
+        const submitButton = form.querySelector('[type="submit"]');
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.dataset.originalText = submitButton.textContent;
+            submitButton.textContent = 'Enviando…';
+        }
 
-        const result = await action(getFormData(form));
+        let requestOptions = { method };
+        if (type === 'create') requestOptions.body = JSON.stringify(data);
+        if (type === 'update') {
+            const { id, ...clientData } = data;
+            requestOptions.body = JSON.stringify(clientData);
+        }
+        if (type === 'partial') requestOptions.body = JSON.stringify(data);
 
-        if (result?.refresh !== false) {
-            await loadClients();
+        try {
+            if (type === 'delete' && !window.confirm(`¿Eliminar el cliente ${data.id}? Esta acción no se puede deshacer.`)) {
+                return;
+            }
+
+            const { response, payload, elapsed } = await fetchJson(requestPath, requestOptions);
+            showResponse(`${method} ${type === 'create' ? '· Crear cliente' : ''}`.trim(), method, requestPath, response?.status ?? 0, payload, elapsed);
+            notifyResponse(response, payload, successMessage);
+
+            if (response?.ok && ['create', 'update', 'partial', 'delete'].includes(type)) {
+                form.reset();
+                if (type === 'create') {
+                    const dateInput = form.querySelector('[name="fecha_cita"]');
+                    if (dateInput) dateInput.min = new Date().toLocaleDateString('en-CA');
+                }
+                await loadClients(paginationState.currentPage);
+            }
+        } finally {
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.textContent = submitButton.dataset.originalText || 'Enviar solicitud';
+            }
         }
     });
 };
 
-bindForm(forms.create, async (data) => {
-    const localErrors = validateCreateForm(data);
+bindForm(forms.create, 'create', 'Cliente creado correctamente.');
+bindForm(forms.show, 'show', 'Consulta realizada correctamente.');
+bindForm(forms.update, 'update', 'Cliente actualizado correctamente.');
+bindForm(forms.partial, 'partial', 'Estado actualizado correctamente.');
+bindForm(forms.delete, 'delete', 'Cliente eliminado correctamente.');
 
-    if (localErrors.length > 0) {
-        localErrors.forEach((message) => showToast('error', message));
-        return { refresh: false };
+forms.refresh?.addEventListener('click', () => loadClients(paginationState.currentPage));
+pageSizeSelect?.addEventListener('change', () => {
+    paginationState.perPage = Number(pageSizeSelect.value);
+    loadClients(1);
+});
+
+copyResponseButton?.addEventListener('click', async () => {
+    if (!responseOutput) return;
+    try {
+        await navigator.clipboard.writeText(responseOutput.textContent);
+        showToast('success', 'Respuesta JSON copiada.');
+    } catch {
+        showToast('error', 'No fue posible copiar. Selecciona el JSON y cópialo manualmente.');
     }
-
-    const { response, payload } = await fetchJson(endpoints.create, {
-        method: 'POST',
-        body: JSON.stringify(data),
-    });
-
-    showResponse('Crear cliente', response.status, payload);
-    notifyResponse(response, payload, 'Cliente creado correctamente.');
 });
-
-bindForm(forms.show, async (data) => {
-    const { response, payload } = await fetchJson(endpoints.show(data.id), { method: 'GET' });
-    showResponse('Consultar cliente', response.status, payload);
-    notifyResponse(response, payload, 'Consulta realizada correctamente.');
-
-    return { refresh: false };
-});
-
-bindForm(forms.update, async (data) => {
-    const id = data.id;
-    const payloadData = { ...data };
-    delete payloadData.id;
-
-    const { response, payload } = await fetchJson(endpoints.update(id), {
-        method: 'PUT',
-        body: JSON.stringify(payloadData),
-    });
-
-    showResponse('Actualizar cliente', response.status, payload);
-    notifyResponse(response, payload, 'Cliente actualizado correctamente.');
-});
-
-bindForm(forms.partial, async (data) => {
-    const { response, payload } = await fetchJson(endpoints.partial, {
-        method: 'PATCH',
-        body: JSON.stringify(data),
-    });
-
-    showResponse('Actualizar estado', response.status, payload);
-    notifyResponse(response, payload, 'Estado actualizado correctamente.');
-});
-
-bindForm(forms.delete, async (data) => {
-    const { response, payload } = await fetchJson(endpoints.delete(data.id), {
-        method: 'DELETE',
-    });
-
-    showResponse('Eliminar cliente', response.status, payload);
-    notifyResponse(response, payload, 'Cliente eliminado correctamente.');
-});
-
-if (forms.refresh) {
-    forms.refresh.addEventListener('click', () => loadClients(paginationState.currentPage));
-}
 
 loadClients().catch((error) => {
-    showResponse('Error al cargar clientes', 500, {
-        message: error.message,
-    });
+    showResponse('Error al cargar clientes', 'GET', endpoints.list, 0, { message: error.message }, 0);
     showToast('error', 'No se pudo cargar el listado de clientes.');
 });

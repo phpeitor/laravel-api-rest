@@ -106,6 +106,8 @@ return [
             'username' => env('DB_USERNAME', 'sa'),
             'password' => env('DB_PASSWORD', 'admin$#'),
             'charset' => env('DB_CHARSET', 'utf8'),
+            'encrypt' => env('DB_ENCRYPT', 'yes'),
+            'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
             'prefix' => '',
             'prefix_indexes' => true,
         ],
