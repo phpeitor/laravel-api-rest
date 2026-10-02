@@ -9,17 +9,9 @@ const toastStack = document.querySelector('[data-toast-stack]');
 const paginationControls = document.querySelector('[data-pagination-controls]');
 const paginationSummary = document.querySelector('[data-pagination-summary]');
 const pageSizeSelect = document.querySelector('[data-page-size]');
-const tokenDialog = document.querySelector('[data-token-dialog]');
-const tokenForm = document.querySelector('[data-token-form]');
-const tokenInput = document.querySelector('#api-token');
-const tokenError = document.querySelector('[data-token-error]');
-const tokenTrigger = document.querySelector('[data-open-token-dialog]');
-const tokenLabel = document.querySelector('[data-token-label]');
-const clearTokenButton = document.querySelector('[data-clear-token]');
-const tokenSubmitButton = document.querySelector('[data-token-submit]');
-const apiConnectionLabel = document.querySelector('[data-api-connection]');
-const apiConnectionDetail = document.querySelector('[data-api-connection-detail]');
-let tokenValue = window.sessionStorage.getItem('api-console-bearer-token') ?? '';
+const listTokenInput = document.querySelector('[data-list-token]');
+const appLayout = document.querySelector('.app-layout');
+const sidebarToggle = document.querySelector('[data-sidebar-toggle]');
 
 const endpoints = {
     list: '/api/v2/clientes',
@@ -40,7 +32,7 @@ const forms = {
 };
 
 const requestInfo = {
-    create: { method: 'POST', path: '/api/v2/clientes' },
+    create: { method: 'POST', path: endpoints.create },
     show: { method: 'GET', path: (data) => endpoints.show(data.id) },
     update: { method: 'PUT', path: (data) => endpoints.update(data.id) },
     partial: { method: 'PATCH', path: endpoints.partial },
@@ -64,7 +56,6 @@ const showToast = (type, message) => {
     toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
     toast.textContent = message;
     toastStack.prepend(toast);
-
     window.setTimeout(() => toast.remove(), 5000);
 };
 
@@ -118,43 +109,16 @@ const showResponse = (label, method, path, status, payload, elapsed = 0) => {
     }
 };
 
-const updateTokenStatus = (connected) => {
-    tokenTrigger?.classList.toggle('is-connected', connected);
-    if (tokenLabel) tokenLabel.textContent = connected ? 'Token conectado' : 'Configurar token';
-    if (apiConnectionLabel) {
-        apiConnectionLabel.textContent = connected ? 'Token autorizado' : 'Token requerido';
-        apiConnectionLabel.classList.toggle('is-connected', connected);
-    }
-    if (apiConnectionDetail) apiConnectionDetail.textContent = connected ? 'Solicitudes autenticadas' : 'Autenticación Bearer';
-    if (clearTokenButton) clearTokenButton.disabled = !connected;
-};
-
-const promptForToken = (message = '') => {
-    if (tokenError) {
-        tokenError.textContent = message;
-        tokenError.hidden = !message;
-    }
-    if (tokenDialog && !tokenDialog.open) tokenDialog.showModal();
-    window.setTimeout(() => tokenInput?.focus(), 0);
-};
-
-const handleUnauthorized = (response) => {
-    if (response?.status !== 401) return;
-    tokenValue = '';
-    window.sessionStorage.removeItem('api-console-bearer-token');
-    updateTokenStatus(false);
-    promptForToken('El token no es válido o ha sido revocado. Comprueba API_TOKEN en el .env del servidor.');
-};
-
 const getFormData = (form) => Object.fromEntries(new FormData(form).entries());
 
-const fetchJson = async (url, options = {}) => {
+const fetchJson = async (url, options = {}, bearerToken = '') => {
     const startedAt = performance.now();
+    const token = String(bearerToken).trim();
 
-    if (!tokenValue) {
+    if (!token) {
         return {
             response: null,
-            payload: { message: 'Configura un token Bearer para usar la API.' },
+            payload: { message: 'Escribe un token Bearer para esta solicitud.' },
             elapsed: 0,
         };
     }
@@ -164,7 +128,7 @@ const fetchJson = async (url, options = {}) => {
             ...options,
             headers: {
                 Accept: 'application/json',
-                Authorization: `Bearer ${tokenValue}`,
+                Authorization: `Bearer ${token}`,
                 ...(options.body ? { 'Content-Type': 'application/json' } : {}),
                 ...(options.headers ?? {}),
             },
@@ -196,6 +160,14 @@ const appendCell = (row, value, className = '') => {
     return cell;
 };
 
+const renderTableMessage = (message) => {
+    if (!clientsTableBody) return;
+    const row = document.createElement('tr');
+    const cell = appendCell(row, message, 'table-message');
+    cell.colSpan = 8;
+    clientsTableBody.replaceChildren(row);
+};
+
 const formatAppointment = (dateValue, timeValue) => {
     const dateMatch = String(dateValue ?? '').match(/^\d{4}-\d{2}-\d{2}/);
     const timeMatch = String(timeValue ?? '').match(/\d{2}:\d{2}/);
@@ -216,10 +188,7 @@ const renderClients = (clientes) => {
     clientsTableBody.replaceChildren();
 
     if (!Array.isArray(clientes) || clientes.length === 0) {
-        const row = document.createElement('tr');
-        const cell = appendCell(row, 'No hay clientes para mostrar. Crea un registro desde el playground.', 'table-message');
-        cell.colSpan = 8;
-        clientsTableBody.append(row);
+        renderTableMessage('No hay clientes para mostrar.');
         return;
     }
 
@@ -268,6 +237,8 @@ const renderClients = (clientes) => {
     });
 };
 
+const readListToken = () => listTokenInput?.value.trim() ?? '';
+
 const renderPagination = () => {
     if (!paginationControls) return;
     paginationControls.replaceChildren();
@@ -289,7 +260,7 @@ const renderPagination = () => {
         button.disabled = disabled;
         button.setAttribute('aria-label', ariaLabel);
         if (active) button.setAttribute('aria-current', 'page');
-        button.addEventListener('click', () => loadClients(page));
+        button.addEventListener('click', () => loadClients(page, readListToken()));
         paginationControls.append(button);
     };
 
@@ -302,9 +273,8 @@ const renderPagination = () => {
     addPageButton('›', currentPage + 1, { disabled: currentPage >= lastPage, ariaLabel: 'Página siguiente' });
 };
 
-const setLoading = (isLoading) => {
+const setLoading = () => {
     if (!clientsTableBody) return;
-    if (!isLoading) return;
 
     const row = document.createElement('tr');
     const cell = document.createElement('td');
@@ -313,27 +283,32 @@ const setLoading = (isLoading) => {
     const spinner = document.createElement('span');
     spinner.className = 'loading-spinner';
     spinner.setAttribute('aria-hidden', 'true');
-    cell.append(spinner, document.createTextNode(' Cargando registros…'));
+    cell.append(spinner, document.createTextNode(' Consultando API…'));
     row.append(cell);
     clientsTableBody.replaceChildren(row);
 };
 
-const loadClients = async (page = paginationState.currentPage) => {
+const loadClients = async (page = paginationState.currentPage, bearerToken = readListToken()) => {
+    if (!bearerToken) {
+        renderTableMessage('Escribe el token Bearer de este endpoint y selecciona «Consultar lista».');
+        if (paginationSummary) paginationSummary.textContent = 'La lista espera una solicitud autenticada.';
+        paginationControls?.replaceChildren();
+        return false;
+    }
+
     const params = new URLSearchParams({ page: String(page), per_page: String(paginationState.perPage) });
     const path = `${endpoints.list}?${params.toString()}`;
-    setLoading(true);
+    setLoading();
 
-    const { response, payload, elapsed } = await fetchJson(path, { method: 'GET' });
+    const { response, payload, elapsed } = await fetchJson(path, { method: 'GET' }, bearerToken);
     showResponse('Listado de clientes', 'GET', path, response?.status ?? 0, payload, elapsed);
 
     if (!response?.ok) {
-        handleUnauthorized(response);
-        renderClients([]);
-        if (clientsTableBody?.firstElementChild) {
-            clientsTableBody.firstElementChild.firstElementChild.textContent = payload?.message ?? 'No se pudo cargar el listado.';
-        }
+        renderTableMessage(payload?.message ?? 'No se pudo cargar el listado.');
         paginationState.total = 0;
         renderPagination();
+        if (response?.status === 401 && listTokenInput) listTokenInput.value = '';
+        notifyResponse(response, payload);
         return false;
     }
 
@@ -346,8 +321,7 @@ const loadClients = async (page = paginationState.currentPage) => {
     paginationState.to = Number(pagination.to ?? 0);
 
     if (paginationState.currentPage > paginationState.lastPage && paginationState.lastPage > 0) {
-        await loadClients(paginationState.lastPage);
-        return;
+        return loadClients(paginationState.lastPage, bearerToken);
     }
 
     renderClients(payload.clientes ?? []);
@@ -356,10 +330,10 @@ const loadClients = async (page = paginationState.currentPage) => {
 };
 
 const requestTabData = {
-    create: { method: 'POST', path: '/api/v2/clientes' },
+    create: { method: 'POST', path: endpoints.create },
     show: { method: 'GET', path: '/api/v2/clientes/{id}' },
     update: { method: 'PUT', path: '/api/v2/clientes/{id}' },
-    partial: { method: 'PATCH', path: '/api/v2/clientes' },
+    partial: { method: 'PATCH', path: endpoints.partial },
     delete: { method: 'DELETE', path: '/api/v2/clientes/{id}' },
 };
 
@@ -401,7 +375,6 @@ const setActiveSection = (sectionId) => {
 
 const syncActiveSection = () => {
     if (!pageSections.length) return;
-
     if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) {
         setActiveSection(pageSections.at(-1).id);
         return;
@@ -415,9 +388,10 @@ const syncActiveSection = () => {
     if (section) setActiveSection(section.id);
 };
 
-sectionLinks.forEach((link) => {
-    link.addEventListener('click', () => setActiveSection(link.dataset.sectionLink));
-});
+sectionLinks.forEach((link) => link.addEventListener('click', () => setActiveSection(link.dataset.sectionLink)));
+sectionLinks.forEach((link) => link.addEventListener('click', () => {
+    if (window.matchMedia('(max-width: 940px)').matches) setSidebarCollapsed(true);
+}));
 window.addEventListener('scroll', syncActiveSection, { passive: true });
 window.addEventListener('resize', syncActiveSection);
 window.addEventListener('hashchange', () => setActiveSection(window.location.hash.slice(1) || 'overview'));
@@ -430,7 +404,7 @@ window.requestAnimationFrame(() => {
 document.querySelectorAll('[data-endpoint-method]').forEach((link) => {
     link.addEventListener('click', () => {
         if (link.dataset.endpointMethod === 'GET' && link.dataset.endpointPath === endpoints.list) {
-            loadClients(1);
+            loadClients(1, readListToken());
             return;
         }
 
@@ -442,85 +416,56 @@ document.querySelectorAll('[data-endpoint-method]').forEach((link) => {
 document.querySelector('[data-scroll-playground]')?.addEventListener('click', () => {
     selectRequestTab('create');
     document.querySelector('#playground')?.scrollIntoView({ behavior: 'smooth' });
-    forms.create?.querySelector('input')?.focus({ preventScroll: true });
+    forms.create?.querySelector('input:not([data-request-token])')?.focus({ preventScroll: true });
 });
 
-tokenTrigger?.addEventListener('click', () => promptForToken());
-tokenInput?.addEventListener('input', () => {
-    if (tokenError) tokenError.hidden = true;
-});
-tokenDialog?.addEventListener('cancel', (event) => {
-    if (!tokenValue) event.preventDefault();
+document.addEventListener('click', (event) => {
+    const toggle = event.target.closest('[data-toggle-request-token]');
+    if (!toggle) return;
+
+    const wrap = toggle.closest('.request-token-wrap, .records-token-control');
+    const input = wrap?.querySelector('[data-request-token], [data-list-token]');
+    if (!input) return;
+
+    const showToken = input.type === 'password';
+    input.type = showToken ? 'text' : 'password';
+    toggle.setAttribute('aria-label', showToken ? 'Ocultar token' : 'Mostrar token');
+    toggle.classList.toggle('is-visible', showToken);
 });
 
-document.querySelector('[data-toggle-token]')?.addEventListener('click', (event) => {
-    if (!tokenInput) return;
-    const showToken = tokenInput.type === 'password';
-    tokenInput.type = showToken ? 'text' : 'password';
-    event.currentTarget.querySelector('span').textContent = showToken ? 'Ocultar' : 'Mostrar';
-    event.currentTarget.setAttribute('aria-label', showToken ? 'Ocultar token' : 'Mostrar token');
-});
+const setSidebarCollapsed = (collapsed) => {
+    appLayout?.classList.toggle('sidebar-collapsed', collapsed);
+    sidebarToggle?.setAttribute('aria-expanded', String(!collapsed));
+    sidebarToggle?.setAttribute('aria-label', collapsed ? 'Expandir barra lateral' : 'Contraer barra lateral');
+    sidebarToggle?.setAttribute('title', collapsed ? 'Expandir barra lateral' : 'Contraer barra lateral');
+};
 
-document.querySelector('[data-close-token]')?.addEventListener('click', () => {
-    if (tokenValue) {
-        tokenDialog?.close();
-        return;
+let savedSidebarCollapsed = false;
+try {
+    savedSidebarCollapsed = window.localStorage.getItem('api-console-sidebar-collapsed') === 'true';
+} catch {
+    savedSidebarCollapsed = false;
+}
+let sidebarIsCollapsed = window.matchMedia('(max-width: 940px)').matches || savedSidebarCollapsed;
+setSidebarCollapsed(sidebarIsCollapsed);
+
+sidebarToggle?.addEventListener('click', () => {
+    sidebarIsCollapsed = !appLayout?.classList.contains('sidebar-collapsed');
+    setSidebarCollapsed(sidebarIsCollapsed);
+    try {
+        window.localStorage.setItem('api-console-sidebar-collapsed', String(sidebarIsCollapsed));
+    } catch {
+        // The sidebar still works for this page view when storage is unavailable.
     }
-
-    if (tokenError) {
-        tokenError.textContent = 'Se requiere un token válido para acceder a la API.';
-        tokenError.hidden = false;
-    }
-    tokenInput?.focus();
 });
 
-clearTokenButton?.addEventListener('click', () => {
-    tokenValue = '';
-    window.sessionStorage.removeItem('api-console-bearer-token');
-    updateTokenStatus(false);
-    if (tokenInput) tokenInput.value = '';
-    if (tokenSubmitButton) tokenSubmitButton.innerHTML = 'Validar y conectar <span aria-hidden="true">→</span>';
-    if (tokenError) tokenError.hidden = true;
-    tokenInput?.focus();
-});
-
-tokenForm?.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const candidate = tokenInput?.value.trim() ?? '';
-    if (!candidate) {
-        promptForToken('El token es obligatorio.');
-        return;
-    }
-
-    const previousToken = window.sessionStorage.getItem('api-console-bearer-token') ?? '';
-    tokenValue = candidate;
-    if (tokenSubmitButton) {
-        tokenSubmitButton.disabled = true;
-        tokenSubmitButton.textContent = 'Validando…';
-    }
-    if (tokenError) tokenError.hidden = true;
-
-    const connected = await loadClients(1);
-    if (connected) {
-        window.sessionStorage.setItem('api-console-bearer-token', candidate);
-        updateTokenStatus(true);
-        tokenInput.value = '';
-        tokenDialog?.close();
-        showToast('success', 'Token validado. Conexión autorizada.');
-    } else {
-        tokenValue = previousToken;
-        if (previousToken) window.sessionStorage.setItem('api-console-bearer-token', previousToken);
-        else window.sessionStorage.removeItem('api-console-bearer-token');
-        updateTokenStatus(Boolean(previousToken));
-        if (tokenError && !tokenError.textContent) {
-            tokenError.textContent = 'No se pudo validar el token. Comprueba la conexión con la API.';
-            tokenError.hidden = false;
-        }
-    }
-
-    if (tokenSubmitButton) {
-        tokenSubmitButton.disabled = false;
-        tokenSubmitButton.innerHTML = 'Validar y conectar <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>';
+document.querySelector('[data-sidebar-backdrop]')?.addEventListener('click', () => {
+    sidebarIsCollapsed = true;
+    setSidebarCollapsed(true);
+    try {
+        window.localStorage.setItem('api-console-sidebar-collapsed', 'true');
+    } catch {
+        // The visual state still updates even without browser storage.
     }
 });
 
@@ -530,31 +475,40 @@ const bindForm = (form, type, successMessage) => {
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
         const data = getFormData(form);
+        const bearerToken = String(data.api_token ?? '').trim();
+        delete data.api_token;
+
         const { method, path } = requestInfo[type];
         const requestPath = typeof path === 'function' ? path(data) : path;
         const submitButton = form.querySelector('[type="submit"]');
+        const tokenInput = form.querySelector('[data-request-token]');
+        if (!bearerToken) {
+            tokenInput?.focus();
+            showToast('error', 'Introduce el token Bearer para esta solicitud.');
+            return;
+        }
+
         if (submitButton) {
             submitButton.disabled = true;
             submitButton.dataset.originalText = submitButton.textContent;
             submitButton.textContent = 'Enviando…';
         }
 
-        let requestOptions = { method };
-        if (type === 'create') requestOptions.body = JSON.stringify(data);
+        const requestOptions = { method };
+        if (type === 'create' || type === 'partial') requestOptions.body = JSON.stringify(data);
         if (type === 'update') {
             const { id, ...clientData } = data;
             requestOptions.body = JSON.stringify(clientData);
         }
-        if (type === 'partial') requestOptions.body = JSON.stringify(data);
 
         try {
             if (type === 'delete' && !window.confirm(`¿Eliminar el cliente ${data.id}? Esta acción no se puede deshacer.`)) {
                 return;
             }
 
-            const { response, payload, elapsed } = await fetchJson(requestPath, requestOptions);
-            showResponse(`${method} ${type === 'create' ? '· Crear cliente' : ''}`.trim(), method, requestPath, response?.status ?? 0, payload, elapsed);
-            handleUnauthorized(response);
+            const { response, payload, elapsed } = await fetchJson(requestPath, requestOptions, bearerToken);
+            showResponse(method === 'GET' ? 'Consulta de cliente' : `${method} · Solicitud API`, method, requestPath, response?.status ?? 0, payload, elapsed);
+            if (response?.status === 401 && tokenInput) tokenInput.value = '';
             notifyResponse(response, payload, successMessage);
 
             if (response?.ok && ['create', 'update', 'partial', 'delete'].includes(type)) {
@@ -563,7 +517,7 @@ const bindForm = (form, type, successMessage) => {
                     const dateInput = form.querySelector('[name="fecha_cita"]');
                     if (dateInput) dateInput.min = new Date().toLocaleDateString('en-CA');
                 }
-                await loadClients(paginationState.currentPage);
+                if (readListToken()) await loadClients(paginationState.currentPage, readListToken());
             }
         } finally {
             if (submitButton) {
@@ -580,10 +534,10 @@ bindForm(forms.update, 'update', 'Cliente actualizado correctamente.');
 bindForm(forms.partial, 'partial', 'Estado actualizado correctamente.');
 bindForm(forms.delete, 'delete', 'Cliente eliminado correctamente.');
 
-forms.refresh?.addEventListener('click', () => loadClients(paginationState.currentPage));
+forms.refresh?.addEventListener('click', () => loadClients(1, readListToken()));
 pageSizeSelect?.addEventListener('change', () => {
     paginationState.perPage = Number(pageSizeSelect.value);
-    loadClients(1);
+    loadClients(1, readListToken());
 });
 
 copyResponseButton?.addEventListener('click', async () => {
@@ -596,14 +550,5 @@ copyResponseButton?.addEventListener('click', async () => {
     }
 });
 
-updateTokenStatus(Boolean(tokenValue));
-if (tokenValue) {
-    loadClients().then((connected) => {
-        if (!connected && !tokenValue) promptForToken('Token requerido. Configura un token válido para continuar.');
-    }).catch((error) => {
-        showResponse('Error al cargar clientes', 'GET', endpoints.list, 0, { message: error.message }, 0);
-        showToast('error', 'No se pudo cargar el listado de clientes.');
-    });
-} else {
-    promptForToken();
-}
+renderTableMessage('Introduce el token Bearer del listado y pulsa «Consultar lista».');
+if (paginationSummary) paginationSummary.textContent = 'Aún no se ha consultado este endpoint.';

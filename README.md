@@ -68,7 +68,7 @@ php artisan config:clear
 curl.exe -H "Accept: application/json" -H "Authorization: Bearer TU_API_TOKEN" http://127.0.0.1:8000/api/v2/clientes
 ```
 
-El panel solicita el token y lo conserva solo en la sesión de la pestaña actual. El middleware compara el token en tiempo constante y falla cerrado con `503` si no hay un secreto configurado. Esta clave compartida es adecuada para desarrollo e integraciones internas; en producción utiliza HTTPS, rota el secreto periódicamente y prefiere credenciales individuales con caducidad y permisos por usuario.
+El playground proporciona un campo Bearer independiente para cada operación y el explorador de datos tiene su propio campo para `GET` y paginación. El token solo se envía en el encabezado de esa solicitud; no se guarda en almacenamiento del navegador ni se agrega al cuerpo JSON. El middleware compara el token en tiempo constante y falla cerrado con `503` si no hay un secreto configurado. Esta clave compartida es adecuada para desarrollo e integraciones internas; en producción utiliza HTTPS, rota el secreto periódicamente y prefiere credenciales individuales con caducidad y permisos por usuario.
 
 ## Endpoints
 

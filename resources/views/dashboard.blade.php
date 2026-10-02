@@ -5,17 +5,20 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <meta name="theme-color" content="#101a2b">
-        <title>API Console · Clientes</title>
+        <title>PHPEITOR API</title>
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body>
         <div class="toast-stack" data-toast-stack aria-live="polite" aria-atomic="true"></div>
         <div class="app-layout">
             <aside class="sidebar" aria-label="Navegación principal">
-                <a class="brand" href="#overview" aria-label="API Console, inicio">
-                    <span class="brand-mark" aria-hidden="true">A</span>
-                    <span class="brand-copy"><strong>API Console</strong><small>Developer workspace</small></span>
-                </a>
+                <div class="brand-row">
+                    <a class="brand" href="#overview" aria-label="PHPEITOR API, inicio">
+                        <span class="brand-mark" aria-hidden="true">P</span>
+                        <span class="brand-copy"><strong>PHPEITOR</strong><small>Developer workspace</small></span>
+                    </a>
+                    <button class="sidebar-toggle" type="button" data-sidebar-toggle aria-label="Contraer barra lateral" aria-expanded="true" title="Contraer barra lateral"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6M4 5v14"/></svg></button>
+                </div>
 
                 <div class="sidebar-label">WORKSPACE</div>
                 <nav class="side-nav">
@@ -29,17 +32,18 @@
                 <a class="resource-link" href="#records" data-section-link="records"><span class="resource-dot"></span><span>Clientes</span><code>/api/v2/clientes</code></a>
 
                 <div class="sidebar-bottom">
-                    <div class="connection-indicator"><span class="status-dot"></span><span><strong data-api-connection>Token requerido</strong><small data-api-connection-detail>Autenticación Bearer</small></span></div>
+                    <div class="connection-indicator"><span class="status-dot"></span><span><strong>Bearer por solicitud</strong><small>Credenciales no persistidas</small></span></div>
                     <div class="sidebar-version">Laravel v{{ Illuminate\Foundation\Application::VERSION }}</div>
                 </div>
             </aside>
+            <button class="sidebar-backdrop" type="button" data-sidebar-backdrop aria-label="Cerrar menú"></button>
 
             <main class="main-content">
                 <header class="topbar">
                     <div class="breadcrumbs"><span>Workspace</span><span class="crumb-divider">/</span><strong>Clientes</strong></div>
                     <div class="topbar-actions">
                         <span class="environment-chip"><span class="status-dot"></span>Development</span>
-                        <button class="token-trigger" type="button" data-open-token-dialog><span class="status-dot"></span><span data-token-label>Configurar token</span></button>
+                        <span class="environment-chip request-auth-chip"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Bearer por operación</span>
                         <a class="docs-link" href="#endpoints">Documentación <span aria-hidden="true">↗</span></a>
                     </div>
                 </header>
@@ -89,7 +93,7 @@
                     <section class="playground-grid" id="playground" data-page-section>
                         <div class="surface request-panel">
                             <div class="section-heading compact-heading">
-                                <div><span class="section-kicker">REQUEST BUILDER</span><h2>Playground</h2><p>Envía solicitudes reales a <code>/api/v2/clientes</code>.</p></div>
+                                <div><span class="section-kicker">REQUEST BUILDER</span><h2>Playground</h2><p>Cada operación pide su propio token Bearer para <code>/api/v2/clientes</code>.</p></div>
                                 <span class="live-badge"><span class="status-dot"></span>LIVE</span>
                             </div>
 
@@ -113,12 +117,14 @@
                                     <div class="field"><label for="nombre_centro">Centro médico <b>*</b></label><input id="nombre_centro" name="nombre_centro" type="text" placeholder="Ej. Clínica Central" maxlength="255" required></div>
                                     <div class="field full"><label for="telefono">Teléfono <b>*</b></label><input id="telefono" name="telefono" type="tel" placeholder="912 345 678" maxlength="9" inputmode="numeric" pattern="[0-9]{9}" title="Ingresa exactamente 9 dígitos" autocomplete="tel" required><small class="field-hint">9 dígitos, sin espacios ni prefijo.</small></div>
                                 </div>
+                                <div class="request-auth"><label for="create-api-token">Authorization <span>Bearer</span></label><div class="request-token-wrap"><input id="create-api-token" name="api_token" type="password" data-request-token autocomplete="off" spellcheck="false" placeholder="Token para esta solicitud" required><button type="button" data-toggle-request-token aria-label="Mostrar token"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
                                 <div class="form-actions"><span class="request-hint">Content-Type: <code>application/json</code></span><button class="button button-primary" type="submit">Enviar solicitud <span aria-hidden="true">→</span></button></div>
                             </form>
 
                             <form class="request-form is-hidden" data-form-show data-request-panel="show">
                                 <div class="form-intro"><strong>Obtener un cliente</strong><span>GET · Lectura de recurso</span></div>
                                 <div class="form-grid"><div class="field full"><label for="show_id">ID del cliente <b>*</b></label><input id="show_id" name="id" type="number" min="1" step="1" placeholder="Ej. 42" required><small class="field-hint">La ruta será <code>/api/v2/clientes/{id}</code>.</small></div></div>
+                                <div class="request-auth"><label for="show-api-token">Authorization <span>Bearer</span></label><div class="request-token-wrap"><input id="show-api-token" name="api_token" type="password" data-request-token autocomplete="off" spellcheck="false" placeholder="Token para esta solicitud" required><button type="button" data-toggle-request-token aria-label="Mostrar token"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
                                 <div class="form-actions"><span class="request-hint">Sin cuerpo de solicitud</span><button class="button button-primary" type="submit">Enviar solicitud <span aria-hidden="true">→</span></button></div>
                             </form>
 
@@ -133,18 +139,21 @@
                                     <div class="field"><label for="update_centro">Centro médico <b>*</b></label><input id="update_centro" name="nombre_centro" type="text" maxlength="255" required></div>
                                     <div class="field full"><label for="update_telefono">Teléfono <b>*</b></label><input id="update_telefono" name="telefono" type="tel" maxlength="9" inputmode="numeric" pattern="[0-9]{9}" title="Ingresa exactamente 9 dígitos" required></div>
                                 </div>
+                                <div class="request-auth"><label for="update-api-token">Authorization <span>Bearer</span></label><div class="request-token-wrap"><input id="update-api-token" name="api_token" type="password" data-request-token autocomplete="off" spellcheck="false" placeholder="Token para esta solicitud" required><button type="button" data-toggle-request-token aria-label="Mostrar token"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
                                 <div class="form-actions"><span class="request-hint">Content-Type: <code>application/json</code></span><button class="button button-primary" type="submit">Enviar solicitud <span aria-hidden="true">→</span></button></div>
                             </form>
 
                             <form class="request-form is-hidden" data-form-partial data-request-panel="partial">
                                 <div class="form-intro"><strong>Cambiar estado</strong><span>PATCH · Actualización parcial</span></div>
                                 <div class="form-grid"><div class="field"><label for="partial_id">ID del cliente <b>*</b></label><input id="partial_id" name="id" type="number" min="1" step="1" placeholder="Ej. 42" required></div><div class="field"><label for="partial_estado">Nuevo estado</label><input id="partial_estado" name="estado" type="text" maxlength="10" placeholder="CONFIRMADO"><small class="field-hint">Máximo 10 caracteres.</small></div></div>
+                                <div class="request-auth"><label for="partial-api-token">Authorization <span>Bearer</span></label><div class="request-token-wrap"><input id="partial-api-token" name="api_token" type="password" data-request-token autocomplete="off" spellcheck="false" placeholder="Token para esta solicitud" required><button type="button" data-toggle-request-token aria-label="Mostrar token"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
                                 <div class="form-actions"><span class="request-hint">Content-Type: <code>application/json</code></span><button class="button button-primary" type="submit">Enviar solicitud <span aria-hidden="true">→</span></button></div>
                             </form>
 
                             <form class="request-form is-hidden" data-form-delete data-request-panel="delete">
                                 <div class="form-intro"><strong>Eliminar un cliente</strong><span class="danger-text">Esta acción no se puede deshacer.</span></div>
                                 <div class="form-grid"><div class="field full"><label for="delete_id">ID del cliente <b>*</b></label><input id="delete_id" name="id" type="number" min="1" step="1" placeholder="Ej. 42" required></div></div>
+                                <div class="request-auth"><label for="delete-api-token">Authorization <span>Bearer</span></label><div class="request-token-wrap"><input id="delete-api-token" name="api_token" type="password" data-request-token autocomplete="off" spellcheck="false" placeholder="Token para esta solicitud" required><button type="button" data-toggle-request-token aria-label="Mostrar token"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
                                 <div class="form-actions"><span class="request-hint">DELETE · Sin cuerpo</span><button class="button button-danger" type="submit">Eliminar cliente <span aria-hidden="true">→</span></button></div>
                             </form>
                         </div>
@@ -163,8 +172,9 @@
                     <section class="surface records-section" id="records" data-page-section>
                         <div class="section-heading records-heading">
                             <div><span class="section-kicker">DATA EXPLORER</span><h2>Clientes</h2><p>Vista paginada de los registros devueltos por la API.</p></div>
-                            <button class="button button-quiet" type="button" data-refresh><span aria-hidden="true">↻</span> Actualizar</button>
+                            <button class="button button-quiet" type="button" data-refresh><span aria-hidden="true">↻</span> Consultar lista</button>
                         </div>
+                        <div class="records-authbar"><div><label for="list-api-token">Token para <code>GET /api/v2/clientes</code></label><small>Esta credencial se usa solo para consultas y paginación de este listado.</small></div><div class="records-token-control"><span>Bearer</span><input id="list-api-token" type="password" data-list-token autocomplete="off" spellcheck="false" placeholder="Pega el token para esta consulta"><button type="button" data-toggle-request-token aria-label="Mostrar token"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
                         <div class="records-meta"><span class="collection-tag"><span class="resource-dot"></span>clientes</span><span class="records-endpoint"><span class="method-badge method-get">GET</span><code>/api/v2/clientes</code></span><label class="page-size">Por página<select data-page-size aria-label="Clientes por página"><option value="5" selected>5</option><option value="10">10</option><option value="25">25</option></select></label></div>
                         <div class="table-wrap">
                             <table class="records-table">
@@ -175,28 +185,9 @@
                         <div class="pagination-bar"><p class="pagination-summary" data-pagination-summary>Preparando listado…</p><div class="pagination-controls" data-pagination-controls></div></div>
                     </section>
 
-                    <footer class="page-footer"><span>API Console <span aria-hidden="true">·</span> interfaz de desarrollo</span><span>Las operaciones se ejecutan contra <code>{{ url('/api/v2') }}</code></span></footer>
+                    <footer class="page-footer"><span>PHPEITOR API <span aria-hidden="true">·</span> interfaz de desarrollo</span><span>Las operaciones se ejecutan contra <code>{{ url('/api/v2') }}</code></span></footer>
                 </div>
             </main>
         </div>
-        <dialog class="token-dialog" data-token-dialog aria-labelledby="token-dialog-title" aria-describedby="token-dialog-description">
-            <form class="token-form" data-token-form>
-                <div class="token-dialog-header">
-                    <div class="token-dialog-mark" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><path d="M12 3 4 6v5c0 5 3.4 8.2 8 10 4.6-1.8 8-5 8-10V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg></div>
-                    <span class="token-version">API v2 <span class="status-dot"></span> Protegida</span>
-                    <button class="token-close" type="button" data-close-token aria-label="Cerrar diálogo"><svg class="ui-icon" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
-                </div>
-                <span class="section-kicker">AUTENTICACIÓN DE API</span>
-                <h2 id="token-dialog-title">Autoriza tus solicitudes</h2>
-                <p id="token-dialog-description">Conecta tu espacio de trabajo con un token Bearer. Se adjuntará a las solicitudes de esta pestaña y se eliminará al cerrar la sesión.</p>
-                <div class="auth-scheme"><span class="auth-scheme-dot"></span><code>Authorization: Bearer &lt;token&gt;</code><span>HTTPS</span></div>
-                <label for="api-token">Token de acceso</label>
-                <div class="token-input-wrap"><svg class="ui-icon token-input-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><input id="api-token" name="token" type="password" autocomplete="off" spellcheck="false" placeholder="Pega el valor de API_TOKEN" required><button class="token-visibility" type="button" data-toggle-token aria-label="Mostrar token"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg><span>Mostrar</span></button></div>
-                <small class="token-help">El token se configura en el servidor mediante <code>API_TOKEN</code> en <code>.env</code>.</small>
-                <div class="token-notice"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-8h.01"/></svg><span>La conexión se valida antes de habilitar las operaciones.</span></div>
-                <p class="token-error" data-token-error role="alert" hidden></p>
-                <div class="token-dialog-actions"><button class="button button-quiet" type="button" data-clear-token>Desconectar</button><button class="button button-primary" type="submit" data-token-submit>Validar y conectar <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button></div>
-            </form>
-        </dialog>
     </body>
 </html>
